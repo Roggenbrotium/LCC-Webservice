@@ -1,5 +1,10 @@
 package com.example.registry;
 
+import javax.persistence.Entity;
+import javax.persistence.Table;
+
+@Entity
+@Table(name = "data")
 public class UserData {
     private final String uuid;
     private final String publickey;

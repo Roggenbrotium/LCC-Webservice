@@ -1,13 +1,16 @@
 package com.example.registry;
 
+import org.apache.catalina.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.util.List;
 
 @RestController
 @RequestMapping(method = {RequestMethod.GET, RequestMethod.PUT})
@@ -15,6 +18,8 @@ public class AddController {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+    @Autowired
+    private DataRepository datarepository;
     private final String uuid = uuid_gen();
     private final UserData data = new UserData(uuid, "publickey", "instancetype", "version", true);
 
@@ -26,6 +31,14 @@ public class AddController {
     @PostMapping("/post")
     public ResponseEntity<String> post() {
         return new ResponseEntity<String>(test_sql(), HttpStatus.OK);
+    }
+
+    @GetMapping("/students")
+    public String listAll(Model model) {
+        List<UserData> userlist = datarepository.findAll();
+        model.addAttribute("listStudents", userlist);
+
+        return "students";
     }
 
     public String test_sql(){
