@@ -1,10 +1,10 @@
 package com.example.registry;
 
-public class Adopt {
+public class AdoptRequest {
     private String uuid;
     private Boolean adopt;
 
-    public Adopt(String uuid, Boolean adopt){
+    public AdoptRequest(String uuid, Boolean adopt){
         this.uuid = uuid;
         this.adopt = adopt;
     }

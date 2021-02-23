@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonSetter;
 
 public class FilterStates {
-    private String status;
+    private SystemStatus status;
     private String instancetype;
 
     /*public FilterStates(String status, String instancetype){
@@ -13,7 +13,7 @@ public class FilterStates {
     }*/
 
     @JsonGetter("status")
-    public String getStatus(){
+    public SystemStatus getStatus(){
         return status;
     }
 
@@ -23,7 +23,7 @@ public class FilterStates {
     }
 
     @JsonSetter("status")
-    public void setStatus(String status){
+    public void setStatus(SystemStatus status){
         this.status = status;
     }
 

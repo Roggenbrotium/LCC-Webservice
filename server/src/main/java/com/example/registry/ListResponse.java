@@ -3,27 +3,27 @@ package com.example.registry;
 import java.util.List;
 
 public class ListResponse {
-    private String status;
-    private List<UserData> userList;
+    private ResponseStatus status;
+    private List<UserDataDB> userList;
 
-    public ListResponse(String status, List<UserData> userList){
+    public ListResponse(ResponseStatus status, List<UserDataDB> userList){
         this.status = status;
         this.userList = userList;
     }
 
-    public String getStatus(){
+    public ResponseStatus getStatus(){
         return status;
     }
 
-    public List<UserData> getUserList(){
+    public List<UserDataDB> getUserList(){
         return userList;
     }
 
-    public void setFilterStates(String status){
+    public void setFilterStates(ResponseStatus status){
         this.status = status;
     }
 
-    public void setUserList(List<UserData> userList){
+    public void setUserList(List<UserDataDB> userList){
         this.userList = userList;
     }
 }

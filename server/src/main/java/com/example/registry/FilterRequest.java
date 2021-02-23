@@ -1,6 +1,6 @@
 package com.example.registry;
 
-public class Filter {
+public class FilterRequest {
     private FilterStates filter;
 
     /*public Filter(FilterStates filterStates){

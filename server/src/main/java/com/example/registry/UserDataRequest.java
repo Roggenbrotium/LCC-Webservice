@@ -1,20 +1,11 @@
 package com.example.registry;
 
-import javax.persistence.*;
-
-@Entity
-@Table(name = "data")
-public class UserData {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+public class UserDataRequest {
 
     private String uuid;
     private String publickey;
     private String instancetype;
     private String version;
-    private Integer status;
-    private String timestamp;
 
     //Wants default Constructor for some reason
     /*public UserData(String uuid, String publickey, String instancetype, String version, int status){
@@ -41,14 +32,6 @@ public class UserData {
         return version;
     }
 
-    public int getStatus(){
-        return status;
-    }
-
-    public String getTimestamp(){
-        return timestamp;
-    }
-
     public void setUuid(String uuid){
         this.uuid = uuid;
     }
@@ -63,13 +46,5 @@ public class UserData {
 
     public void setVersion(String version){
         this.version = version;
-    }
-
-    public void setStatus(Integer status){
-        this.status = status;
-    }
-
-    public void setTimestamp(String status){
-        this.timestamp = timestamp;
     }
 }

@@ -1,10 +1,10 @@
 package com.example.registry;
 
-public class Update {
+public class UpdateRequest {
     private String uuid;
     private String version;
 
-    public Update(String uuid, String version){
+    public UpdateRequest(String uuid, String version){
         this.uuid = uuid;
         this.version = version;
     }
