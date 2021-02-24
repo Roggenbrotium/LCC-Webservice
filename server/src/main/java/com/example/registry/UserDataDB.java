@@ -1,6 +1,7 @@
 package com.example.registry;
 
 import javax.persistence.*;
+import java.sql.Blob;
 import java.util.Date;
 
 @Entity
@@ -11,7 +12,7 @@ public class UserDataDB {
     private Integer id;
 
     private String uuid;
-    private String publickey;
+    private Blob publickey;
     private String instancetype;
     private String version;
     private SystemStatus status;
@@ -30,7 +31,7 @@ public class UserDataDB {
         return uuid;
     }
 
-    public String getPublickey(){
+    public Blob getPublickey(){
         return publickey;
     }
 
@@ -54,7 +55,7 @@ public class UserDataDB {
         this.uuid = uuid;
     }
 
-    public void setPublickey(String publickey){
+    public void setPublickey(Blob publickey){
         this.publickey = publickey;
     }
 

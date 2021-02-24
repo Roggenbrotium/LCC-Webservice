@@ -4,26 +4,26 @@ import java.util.List;
 
 public class ListResponse {
     private ResponseStatus status;
-    private List<UserDataDB> userList;
+    private List<UserDataDB> list;
 
-    public ListResponse(ResponseStatus status, List<UserDataDB> userList){
+    public ListResponse(ResponseStatus status, List<UserDataDB> list){
         this.status = status;
-        this.userList = userList;
+        this.list = list;
     }
 
     public ResponseStatus getStatus(){
         return status;
     }
 
-    public List<UserDataDB> getUserList(){
-        return userList;
+    public List<UserDataDB> getList(){
+        return list;
     }
 
     public void setFilterStates(ResponseStatus status){
         this.status = status;
     }
 
-    public void setUserList(List<UserDataDB> userList){
-        this.userList = userList;
+    public void setList(List<UserDataDB> list){
+        this.list = list;
     }
 }

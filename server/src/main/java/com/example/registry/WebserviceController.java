@@ -1,11 +1,15 @@
 package com.example.registry;
 
+import org.hibernate.engine.jdbc.BlobProxy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.security.*;
+import java.sql.Blob;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
@@ -24,7 +28,7 @@ public class WebserviceController {
     }
 
     @PostMapping(value = "/registry/add", consumes = "application/json", produces = "application/json")
-    public ResponseEntity<StatusResponse> add(@RequestBody UserDataRequest data) {
+    public ResponseEntity<StatusResponse> add(@RequestBody UserDataRequest data){
         if (data.getUuid().length() != 36){
             return new ResponseEntity<StatusResponse>(new StatusResponse(ResponseStatus.INVALID_REQUEST), HttpStatus.OK);
         } else {
@@ -32,7 +36,9 @@ public class WebserviceController {
             if (!exists){
                 UserDataDB userDataDB = new UserDataDB();
                 userDataDB.setUuid(data.getUuid());
-                userDataDB.setPublickey(data.getPublickey());
+                byte[] bytes = data.getPublickey().getBytes(StandardCharsets.UTF_8);
+                Blob blob = BlobProxy.generateProxy(bytes);
+                userDataDB.setPublickey(blob);
                 userDataDB.setInstancetype(data.getInstancetype());
                 userDataDB.setVersion(data.getVersion());
                 userDataDB.setStatus(SystemStatus.PENDING);
@@ -88,17 +94,18 @@ public class WebserviceController {
         SystemStatus status = filter.getFilter().getStatus();
         List<UserDataDB> userData;
 
-        if(status.equals(SystemStatus.PENDING)){
-            userData = findby(instancetype, SystemStatus.PENDING);
-        } else if(status.equals(SystemStatus.ADOPTED)){
-            userData = findby(instancetype, SystemStatus.ADOPTED);
-        } else if(status.equals(SystemStatus.REJECTED)){
-            userData = findby(instancetype, SystemStatus.REJECTED);
-        } else if(!instancetype.isEmpty()){
-            userData = datarepository.findByInstancetype(instancetype);
-        }
-        else {
-            userData = datarepository.findAll();
+        if(status != null){
+            if(!instancetype.isEmpty()){
+                userData = datarepository.findByInstancetypeAndStatus(instancetype, status);
+            } else {
+                userData = datarepository.findByStatus(status);
+            }
+        } else{
+            if(!instancetype.isEmpty()) {
+                userData = datarepository.findByInstancetype(instancetype);
+            } else {
+                userData = datarepository.findAll();
+            }
         }
 
         return new ResponseEntity<ListResponse>(new ListResponse(ResponseStatus.OK, userData), HttpStatus.OK);
@@ -135,13 +142,5 @@ public class WebserviceController {
             Key pub_key = kp.getPublic();
 
             return Base64.getEncoder().encodeToString(pub_key.getEncoded());
-    }
-
-    public List<UserDataDB> findby(String instancetype, SystemStatus status){
-        if(!instancetype.isEmpty()){
-            return datarepository.findByInstancetypeAndStatus(instancetype, status);
-        } else {
-            return datarepository.findByStatus(status);
-        }
     }
 }
