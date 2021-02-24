@@ -1,4 +1,4 @@
-package com.example.registry;
+package com.liland.lcc.dto;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonSetter;

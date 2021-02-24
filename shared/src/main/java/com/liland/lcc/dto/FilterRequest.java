@@ -1,4 +1,4 @@
-package com.example.registry;
+package com.liland.lcc.dto;
 
 public class FilterRequest {
     private FilterStates filter;

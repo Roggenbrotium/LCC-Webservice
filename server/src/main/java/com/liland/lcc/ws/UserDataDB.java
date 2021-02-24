@@ -1,4 +1,6 @@
-package com.example.registry;
+package com.liland.lcc.ws;
+
+import com.liland.lcc.dto.SystemStatus;
 
 import javax.persistence.*;
 import java.sql.Blob;
@@ -12,6 +14,8 @@ public class UserDataDB {
     private Integer id;
 
     private String uuid;
+
+    @Lob
     private Blob publickey;
     private String instancetype;
     private String version;

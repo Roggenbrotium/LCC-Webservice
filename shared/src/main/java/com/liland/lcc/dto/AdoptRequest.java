@@ -1,4 +1,4 @@
-package com.example.registry;
+package com.liland.lcc.dto;
 
 public class AdoptRequest {
     private String uuid;

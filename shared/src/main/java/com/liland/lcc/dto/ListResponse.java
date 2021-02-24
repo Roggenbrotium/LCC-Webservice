@@ -1,12 +1,12 @@
-package com.example.registry;
+package com.liland.lcc.dto;
 
 import java.util.List;
 
 public class ListResponse {
     private ResponseStatus status;
-    private List<UserDataDB> list;
+    private List<UserDataResponse> list;
 
-    public ListResponse(ResponseStatus status, List<UserDataDB> list){
+    public ListResponse(ResponseStatus status, List<UserDataResponse> list){
         this.status = status;
         this.list = list;
     }
@@ -15,7 +15,7 @@ public class ListResponse {
         return status;
     }
 
-    public List<UserDataDB> getList(){
+    public List<UserDataResponse> getList(){
         return list;
     }
 
@@ -23,7 +23,7 @@ public class ListResponse {
         this.status = status;
     }
 
-    public void setList(List<UserDataDB> list){
+    public void setList(List<UserDataResponse> list){
         this.list = list;
     }
 }

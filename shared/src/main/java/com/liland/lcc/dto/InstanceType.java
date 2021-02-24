@@ -1,11 +1,11 @@
-package com.example.registry;
+package com.liland.lcc.dto;
 
 public enum InstanceType {
     IVENTCLOUD(1), IGOV_APP(2);
 
     public final Integer id;
 
-    private InstanceType(Integer id) {
+    InstanceType(Integer id) {
         this.id = id;
     }
 }

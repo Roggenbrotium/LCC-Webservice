@@ -1,20 +1,24 @@
-package com.example.registry;
+package com.liland.lcc.dto;
 
-public class UserDataRequest {
+import java.util.Date;
+
+public class UserDataResponse {
 
     private String uuid;
     private String publickey;
     private String instancetype;
     private String version;
+    private SystemStatus status;
+    private Date timestamp;
 
-    //Wants default Constructor for some reason
-    /*public UserData(String uuid, String publickey, String instancetype, String version, int status){
+    public UserDataResponse(String uuid, String publickey, String instancetype, String version, SystemStatus status, Date timestamp){
         this.uuid = uuid;
         this.publickey = publickey;
         this.instancetype = instancetype;
         this.version = version;
         this.status = status;
-    }*/
+        this.timestamp = timestamp;
+    }
 
     public String getUuid(){
         return uuid;
@@ -32,6 +36,14 @@ public class UserDataRequest {
         return version;
     }
 
+    public SystemStatus getStatus(){
+        return status;
+    }
+
+    public Date getTimestamp(){
+        return timestamp;
+    }
+
     public void setUuid(String uuid){
         this.uuid = uuid;
     }
@@ -46,5 +58,13 @@ public class UserDataRequest {
 
     public void setVersion(String version){
         this.version = version;
+    }
+
+    public void setStatus(SystemStatus status){
+        this.status = status;
+    }
+
+    public void setTimestamp(Date timestamp){
+        this.timestamp = timestamp;
     }
 }

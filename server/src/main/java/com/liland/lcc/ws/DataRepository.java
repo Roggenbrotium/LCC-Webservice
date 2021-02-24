@@ -1,5 +1,6 @@
-package com.example.registry;
+package com.liland.lcc.ws;
 
+import com.liland.lcc.dto.SystemStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
