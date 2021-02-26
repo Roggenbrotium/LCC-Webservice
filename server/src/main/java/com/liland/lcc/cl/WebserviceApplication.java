@@ -1,4 +1,4 @@
-package com.liland.lcc.ws;
+package com.liland.lcc.cl;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

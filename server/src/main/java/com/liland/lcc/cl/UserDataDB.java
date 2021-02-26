@@ -1,4 +1,4 @@
-package com.liland.lcc.ws;
+package com.liland.lcc.cl;
 
 import com.liland.lcc.dto.SystemStatus;
 

@@ -1,4 +1,4 @@
-package com.liland.lcc.ws;
+package com.liland.lcc.cl;
 
 import com.liland.lcc.dto.*;
 import com.liland.lcc.dto.ResponseStatus;
@@ -12,6 +12,8 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.X509EncodedKeySpec;
 import java.sql.Blob;
 import java.sql.SQLException;
 import java.text.ParseException;
@@ -28,9 +30,6 @@ public class WebserviceController {
 
     @Autowired
     private DataRepository datarepository;
-
-    public WebserviceController() throws NoSuchAlgorithmException {
-    }
 
     @PostMapping(value = "/registry/add", consumes = "application/json", produces = "application/json")
     public ResponseEntity<StatusResponse> add(@RequestBody UserDataRequest data){
@@ -138,6 +137,35 @@ public class WebserviceController {
             return new ResponseEntity<StatusResponse>(new StatusResponse(ResponseStatus.OK), HttpStatus.OK);
         }
     }
+
+    @PostMapping(value = "/registry/login", consumes = "application/json", produces = "application/json")
+    @Transactional
+    public ResponseEntity<String> login(@RequestBody LoginRequest data) throws SQLException, NoSuchAlgorithmException,
+            InvalidKeySpecException, InvalidKeyException, SignatureException {
+        UserDataDB userDataDB = datarepository.findByUuid(data.getUuid());
+
+        Blob blob = userDataDB.getPublickey();
+        String pkey = new String(blob.getBytes(1L, (int) blob.length()));
+        System.out.println(pkey);
+        byte[] decodedKey = Base64.getDecoder().decode(pkey);
+        X509EncodedKeySpec publicKey = new X509EncodedKeySpec(decodedKey);
+        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+        PublicKey decodePublicKey = keyFactory.generatePublic(publicKey);
+
+        Signature signature = Signature.getInstance("SHA256withRSA");
+        signature.initVerify(decodePublicKey);
+
+        byte[] msg = Base64.getDecoder().decode(data.getSignature());
+        signature.update(msg);
+
+        if (signature.verify(msg)) {
+            return new ResponseEntity<String>("Logged in", HttpStatus.OK);
+        } else {
+            return new ResponseEntity<String>("Login failed", HttpStatus.OK);
+        }
+    }
+
+    //Don't forget private key signs message and public key checks the signature
 
     public String uuid_gen() {
         try{
