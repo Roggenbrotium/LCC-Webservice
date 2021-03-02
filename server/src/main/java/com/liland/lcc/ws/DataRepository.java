@@ -1,4 +1,4 @@
-package com.liland.lcc.cl;
+package com.liland.lcc.ws;
 
 import com.liland.lcc.dto.SystemStatus;
 import org.springframework.data.jpa.repository.JpaRepository;

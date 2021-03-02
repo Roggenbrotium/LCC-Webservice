@@ -1,138 +1,74 @@
 package com.liland.lcc.cl;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
 import java.security.*;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.PKCS8EncodedKeySpec;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.Base64;
+import java.util.UUID;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class ClientApplication {
 
-    public static URL url;
     public static HttpURLConnection con;
-    public static String jsonInputString;
-    public static String home = System.getProperty("user.home");
 
-    public static void main(String[] args) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException,
-            InvalidKeyException, SignatureException {
+    public static void main(String[] args) throws IOException, NoSuchAlgorithmException{
+        KeyPair keyPair = keyGen();
+        String uuid = uuidGen();
+
         switch (args[0]){
             case "register":
-                url = new URL ("http://localhost:8080/registry/add");
-
-                connectSetter();
-
-                String uuid = uuidGen();
-                String pkey = checkKey();
-                jsonInputString = "{\"uuid\": \"" + uuid + "\", \"publickey\": \"" + pkey + "\"," +
-                        " \"instancetype\": \"" + args[1] + "\", \"version\": \"" + args[2] + "\"}";
-
-                httpHandler();
-
+                register(args, keyPair, uuid);
                 break;
             case "login":
-                String msg = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS"));
-
-                File file = new File(home + "/.ssh/id_rsa.pub");
-
-                String pKey = getKey(file);
-                System.out.println(pKey);
-                file = new File(home + "/.ssh/id_rsa");
-
-                String privateKey = getKey(file);
-                byte[] decodedKey = Base64.getDecoder().decode(privateKey);
-                PKCS8EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(decodedKey);
-                KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-                PrivateKey decodePrivateKey = keyFactory.generatePrivate(privateKeySpec);
-
-                Signature privateSignature = Signature.getInstance("SHA256withRSA");
-                privateSignature.initSign(decodePrivateKey);
-                privateSignature.update(msg.getBytes());
-
-                byte[] signature = privateSignature.sign();
-
-                msg = Base64.getEncoder().encodeToString(signature);
-
-                url = new URL ("http://localhost:8080/registry/login");
-
-                connectSetter();
-
-                uuid = uuidGen();
-                jsonInputString = "{\"uuid\": \"" + uuid + "\", \"signature\": \"" + msg + "\"}";
-                System.out.println(jsonInputString);
-
-                httpHandler();
-
+                login(keyPair, uuid);
+                break;
             default:
                 System.out.println("Error");
                 break;
         }
     }
 
-    public static String uuidGen() throws IOException {
-            Process serialnum = Runtime.getRuntime().exec("sudo cat /sys/class/dmi/id/product_uuid");
-            BufferedReader reader = new BufferedReader(new InputStreamReader(serialnum.getInputStream()));
-            return reader.readLine().trim();
-    }
+    public static byte[] sign(String message, PrivateKey privateKey){
+        try {
+            byte[] byteMsg = message.getBytes(UTF_8);
 
-    public static void keyGen() throws NoSuchAlgorithmException, IOException {
-        KeyPairGenerator kg= KeyPairGenerator.getInstance("RSA");
-        kg.initialize(4096);
-        KeyPair kp = kg.generateKeyPair();
-        String home = System.getProperty("user.home");
-        File file = new File(home + "/.ssh/id_rsa");
-        file.createNewFile();
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            byte[] hashMsg = md.digest(byteMsg);
 
-        FileWriter fileWriter = new FileWriter(home + "/.ssh/id_rsa");
-        fileWriter.write(Base64.getEncoder().encodeToString(kp.getPrivate().getEncoded()));
-        fileWriter.close();
-
-        file = new File(home + "/.ssh/id_rsa.pub");
-        file.createNewFile();
-
-        fileWriter = new FileWriter(home + "/.ssh/id_rsa.pub");
-        fileWriter.write(Base64.getEncoder().encodeToString(kp.getPublic().getEncoded()));
-        fileWriter.close();
-    }
-
-    public static String checkKey() throws IOException, NoSuchAlgorithmException {
-        File file = new File(home + "/.ssh/id_rsa");
-
-        if (file.exists()){
-            file = new File(home + "/.ssh/id_rsa.pub");
-
-            if (file.exists()){
-                return getKey(file);
-            }else {
-                System.out.println("Missing Public Key");
-                System.exit(0);
-                return null;
-            }
-        }else {
-            file = new File(home + "/.ssh/id_rsa.pub");
-
-            if (file.exists()){
-                System.out.println("Missing Private Key");
-                System.exit(0);
-                return null;
-            }else {
-                keyGen();
-                file = new File(home + "/.ssh/id_rsa.pub");
-                return getKey(file);
-            }
+            Cipher cipher = Cipher.getInstance("RSA");
+            cipher.init(Cipher.ENCRYPT_MODE, privateKey);
+            return cipher.doFinal(hashMsg);
+        }
+        catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException |
+                BadPaddingException | IllegalBlockSizeException e){
+            System.out.println(Arrays.toString(e.getStackTrace()));
+            return null;
         }
     }
 
-    public static void httpHandler() throws IOException {
+    public static String uuidGen() throws IOException {
+        return UUID.randomUUID().toString();
+    }
+
+    public static KeyPair keyGen() throws NoSuchAlgorithmException {
+        KeyPairGenerator kg= KeyPairGenerator.getInstance("RSA");
+        kg.initialize(4096);
+
+        return kg.generateKeyPair();
+    }
+
+    public static void httpHandler(String httpBody) throws IOException {
         OutputStream outputStream = con.getOutputStream();
-        byte[] body = jsonInputString.getBytes(UTF_8);
+        byte[] body = httpBody.getBytes(UTF_8);
         outputStream.write(body, 0, body.length);
 
         try(BufferedReader br = new BufferedReader(
@@ -146,22 +82,67 @@ public class ClientApplication {
         }
     }
 
-    public static String getKey(File file) throws IOException {
-        String key = Files.readString(file.toPath(), Charset.defaultCharset());
-        key = key.replace("ssh-rsa", "")
-                .replaceAll(System.lineSeparator(), "")
-                .replaceAll("\\s+","")
-                .replace("praktikum@praktikum", "")
-                .replace("-----BEGIN PUBLIC KEY-----", "")
-                .replace("-----END PUBLIC KEY-----", "");
-        return key;
-    }
-
-    public static void connectSetter() throws IOException {
+    public static void connectSetter(URL url) throws IOException {
         con = (HttpURLConnection)url.openConnection();
         con.setRequestMethod("POST");
         con.setRequestProperty("Content-Type", "application/json");
         con.setRequestProperty("Accept", "application/json");
         con.setDoOutput(true);
+    }
+    public static void register(String[] args, KeyPair keyPair, String uuid) throws IOException{
+        URL url = new URL ("http://localhost:8080/registry/add");
+
+        connectSetter(url);
+
+        String publicKey = Base64.getEncoder().encodeToString(keyPair.getPublic().getEncoded());
+        String jsonInputString = "{\"uuid\": \"" + uuid + "\", \"publickey\": \"" + publicKey + "\"," +
+                " \"instancetype\": \"" + args[1] + "\", \"version\": \"" + args[2] + "\"}";
+
+        System.out.println(jsonInputString);
+
+        httpHandler(jsonInputString);
+    }
+
+    public static void adopt(String uuid) throws IOException{
+        URL url = new URL ("http://localhost:8080/registry/adopt");
+
+        connectSetter(url);
+
+        String jsonInputString = "{\"uuid\": \"" + uuid + "\", \"adopt\": \"true\"}";
+
+        System.out.println(jsonInputString);
+
+        httpHandler(jsonInputString);
+    }
+
+    public static void login(KeyPair keyPair, String uuid) throws IOException{
+        URL url = new URL ("http://localhost:8080/registry/login");
+
+        connectSetter(url);
+
+        String message = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS"));
+
+        byte[] signature = sign(message, keyPair.getPrivate());
+
+        assert signature != null;
+        String jsonInputString = "{\"uuid\": \"" + uuid + "\", \"signature\": \"" + Base64.getEncoder().encodeToString(signature) + "\"," +
+                " \"msg\": \"" + message + "\"}";
+
+        System.out.println(jsonInputString);
+
+        httpHandler(jsonInputString);
+    }
+
+    //only for testing
+    public static void delete(String uuid) throws IOException{
+        URL url = new URL ("http://localhost:8080/registry/delete");
+
+        connectSetter(url);
+
+        String jsonInputString = "{\"uuid\": \"" + uuid + "\"}";
+
+        System.out.println(jsonInputString);
+
+        httpHandler(jsonInputString);
     }
 }

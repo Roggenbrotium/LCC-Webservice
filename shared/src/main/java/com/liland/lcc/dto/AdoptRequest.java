@@ -4,10 +4,10 @@ public class AdoptRequest {
     private String uuid;
     private Boolean adopt;
 
-    public AdoptRequest(String uuid, Boolean adopt){
+    /*public AdoptRequest(String uuid, Boolean adopt){
         this.uuid = uuid;
         this.adopt = adopt;
-    }
+    }*/
 
     public String getUuid(){
         return uuid;
