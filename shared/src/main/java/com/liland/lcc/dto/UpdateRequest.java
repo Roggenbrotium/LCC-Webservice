@@ -4,10 +4,10 @@ public class UpdateRequest {
     private String uuid;
     private String version;
 
-    public UpdateRequest(String uuid, String version){
+    /*public UpdateRequest(String uuid, String version){
         this.uuid = uuid;
         this.version = version;
-    }
+    }*/
 
     public String getUuid(){
         return uuid;

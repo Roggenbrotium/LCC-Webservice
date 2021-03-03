@@ -23,8 +23,12 @@ class ClientApplicationTest {
 		String uuid = ClientApplication.uuidGen();
 		String[] args = {"", "IVENTCLOUD", "5.0.177"};
 		ClientApplication.register(args, keyPair, uuid);
-		ClientApplication.adopt(uuid);
+		ClientApplication.adopt(uuid, true);
 		ClientApplication.login(keyPair, uuid);
+		args = new String[]{"", "1.2.3"};
+		ClientApplication.update(args);
+		args = new String[]{"", "", ""};
+		ClientApplication.list(args);
 		ClientApplication.delete(uuid);
 	}
 }

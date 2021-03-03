@@ -1,9 +1,11 @@
 package com.liland.lcc.ws;
 
 import com.liland.lcc.dto.SystemStatus;
+import org.springframework.security.core.GrantedAuthority;
 
 import javax.persistence.*;
 import java.sql.Blob;
+import java.util.Collection;
 import java.util.Date;
 
 @Entity

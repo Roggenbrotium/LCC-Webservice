@@ -19,6 +19,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 public class ClientApplication {
 
     public static HttpURLConnection con;
+    public static String token;
 
     public static void main(String[] args) throws IOException, NoSuchAlgorithmException{
         KeyPair keyPair = keyGen();
@@ -82,11 +83,39 @@ public class ClientApplication {
         }
     }
 
+    public static void tokenHttpHandler(String httpBody) throws IOException {
+        OutputStream outputStream = con.getOutputStream();
+        byte[] body = httpBody.getBytes(UTF_8);
+        outputStream.write(body, 0, body.length);
+
+        try(BufferedReader br = new BufferedReader(
+                new InputStreamReader(con.getInputStream(), UTF_8))) {
+            StringBuilder response = new StringBuilder();
+            String responseLine;
+            while ((responseLine = br.readLine()) != null) {
+                response.append(responseLine.trim());
+            }
+
+            if(response.toString().equals("0")){
+                System.out.println("INVALID_REQUEST");
+            }
+            else if(response.toString().equals("1")){
+                System.out.println("NOT_ADOPTED");
+            }
+            //generated Token on Login but still needs to verify token
+            else {
+                token = response.toString();
+                System.out.println("OK");
+            }
+        }
+    }
+
     public static void connectSetter(URL url) throws IOException {
         con = (HttpURLConnection)url.openConnection();
         con.setRequestMethod("POST");
         con.setRequestProperty("Content-Type", "application/json");
         con.setRequestProperty("Accept", "application/json");
+        con.setRequestProperty("Authorization", "Bearer " + token);
         con.setDoOutput(true);
     }
     public static void register(String[] args, KeyPair keyPair, String uuid) throws IOException{
@@ -103,12 +132,12 @@ public class ClientApplication {
         httpHandler(jsonInputString);
     }
 
-    public static void adopt(String uuid) throws IOException{
+    public static void adopt(String uuid, boolean adopt) throws IOException{
         URL url = new URL ("http://localhost:8080/registry/adopt");
 
         connectSetter(url);
 
-        String jsonInputString = "{\"uuid\": \"" + uuid + "\", \"adopt\": \"true\"}";
+        String jsonInputString = "{\"uuid\": \"" + uuid + "\", \"adopt\": \"" + adopt + "\"}";
 
         System.out.println(jsonInputString);
 
@@ -127,6 +156,34 @@ public class ClientApplication {
         assert signature != null;
         String jsonInputString = "{\"uuid\": \"" + uuid + "\", \"signature\": \"" + Base64.getEncoder().encodeToString(signature) + "\"," +
                 " \"msg\": \"" + message + "\"}";
+
+        System.out.println(jsonInputString);
+
+        tokenHttpHandler(jsonInputString);
+    }
+
+    public static void update(String[] args) throws IOException{
+        URL url = new URL ("http://localhost:8080/registry/update");
+
+        connectSetter(url);
+
+        String jsonInputString = "{\"version\": \"" + args[1] + "\"}";
+
+        System.out.println(jsonInputString);
+
+        httpHandler(jsonInputString);
+    }
+
+    public static void list(String[] args) throws IOException{
+        URL url = new URL ("http://localhost:8080/registry/list");
+
+        connectSetter(url);
+
+        if(args[1].equals("")){
+            args[1] = null;
+        }
+
+        String jsonInputString = "{\"filter\": {\"status\": " + args[1] + ", \"instancetype\": \"" + args[2] + "\"}}";
 
         System.out.println(jsonInputString);
 
