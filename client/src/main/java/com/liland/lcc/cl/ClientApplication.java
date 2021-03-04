@@ -21,13 +21,13 @@ public class ClientApplication {
     public static HttpURLConnection con;
     public static String token;
 
-    public static void main(String[] args) throws IOException, NoSuchAlgorithmException{
+    public static void main(String[] args) throws IOException, NoSuchAlgorithmException {
         KeyPair keyPair = keyGen();
         String uuid = uuidGen();
 
-        switch (args[0]){
+        switch (args[0]) {
             case "register":
-                register(args, keyPair, uuid);
+                add(args, keyPair, uuid);
                 break;
             case "login":
                 login(keyPair, uuid);
@@ -38,7 +38,8 @@ public class ClientApplication {
         }
     }
 
-    public static byte[] sign(String message, PrivateKey privateKey){
+    //signs a message with the given private key
+    public static byte[] sign(String message, PrivateKey privateKey) {
         try {
             byte[] byteMsg = message.getBytes(UTF_8);
 
@@ -48,78 +49,77 @@ public class ClientApplication {
             Cipher cipher = Cipher.getInstance("RSA");
             cipher.init(Cipher.ENCRYPT_MODE, privateKey);
             return cipher.doFinal(hashMsg);
-        }
-        catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException |
-                BadPaddingException | IllegalBlockSizeException e){
+        } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException |
+                BadPaddingException | IllegalBlockSizeException e) {
             System.out.println(Arrays.toString(e.getStackTrace()));
             return null;
         }
     }
 
-    public static String uuidGen() throws IOException {
+    public static String uuidGen() {
         return UUID.randomUUID().toString();
     }
 
     public static KeyPair keyGen() throws NoSuchAlgorithmException {
-        KeyPairGenerator kg= KeyPairGenerator.getInstance("RSA");
+        KeyPairGenerator kg = KeyPairGenerator.getInstance("RSA");
         kg.initialize(4096);
 
         return kg.generateKeyPair();
     }
 
-    public static void httpHandler(String httpBody) throws IOException {
+    //sends a request and receives a response
+    //returns the response as a String
+    public static String httpHandler(String httpBody) throws IOException {
         OutputStream outputStream = con.getOutputStream();
         byte[] body = httpBody.getBytes(UTF_8);
         outputStream.write(body, 0, body.length);
 
-        try(BufferedReader br = new BufferedReader(
+        try (BufferedReader br = new BufferedReader(
                 new InputStreamReader(con.getInputStream(), UTF_8))) {
             StringBuilder response = new StringBuilder();
             String responseLine;
             while ((responseLine = br.readLine()) != null) {
                 response.append(responseLine.trim());
             }
-            System.out.println(response.toString());
+
+            return response.toString();
         }
     }
 
+    //does pretty much the same as httpHandler but also saves the token received in the resonse-header
     public static void tokenHttpHandler(String httpBody) throws IOException {
         OutputStream outputStream = con.getOutputStream();
         byte[] body = httpBody.getBytes(UTF_8);
         outputStream.write(body, 0, body.length);
 
-        try(BufferedReader br = new BufferedReader(
+        try (BufferedReader br = new BufferedReader(
                 new InputStreamReader(con.getInputStream(), UTF_8))) {
             StringBuilder response = new StringBuilder();
             String responseLine;
             while ((responseLine = br.readLine()) != null) {
                 response.append(responseLine.trim());
             }
+            token = con.getHeaderField("Authentication");
 
-            if(response.toString().equals("0")){
-                System.out.println("INVALID_REQUEST");
-            }
-            else if(response.toString().equals("1")){
-                System.out.println("NOT_ADOPTED");
-            }
-            //generated Token on Login but still needs to verify token
-            else {
-                token = response.toString();
-                System.out.println("OK");
-            }
+            System.out.println(response);
         }
     }
 
+    //opens a connection to a given url
     public static void connectSetter(URL url) throws IOException {
-        con = (HttpURLConnection)url.openConnection();
+        con = (HttpURLConnection) url.openConnection();
         con.setRequestMethod("POST");
         con.setRequestProperty("Content-Type", "application/json");
         con.setRequestProperty("Accept", "application/json");
-        con.setRequestProperty("Authorization", "Bearer " + token);
+        if (token != null) {
+            con.setRequestProperty("Authorization", "Bearer " + token);
+        }
         con.setDoOutput(true);
     }
-    public static void register(String[] args, KeyPair keyPair, String uuid) throws IOException{
-        URL url = new URL ("http://localhost:8080/registry/add");
+
+    //sends request to add
+    public static void add(String[] args, KeyPair keyPair, String uuid) throws IOException {
+        URL url = new URL("http://localhost:8080/registry/add");
 
         connectSetter(url);
 
@@ -129,11 +129,13 @@ public class ClientApplication {
 
         System.out.println(jsonInputString);
 
-        httpHandler(jsonInputString);
+        String response = httpHandler(jsonInputString);
+        System.out.println(response);
     }
 
-    public static void adopt(String uuid, boolean adopt) throws IOException{
-        URL url = new URL ("http://localhost:8080/registry/adopt");
+    //sends request to adopt
+    public static void adopt(String uuid, boolean adopt) throws IOException {
+        URL url = new URL("http://localhost:8080/registry/adopt");
 
         connectSetter(url);
 
@@ -141,11 +143,13 @@ public class ClientApplication {
 
         System.out.println(jsonInputString);
 
-        httpHandler(jsonInputString);
+        String response = httpHandler(jsonInputString);
+        System.out.println(response);
     }
 
-    public static void login(KeyPair keyPair, String uuid) throws IOException{
-        URL url = new URL ("http://localhost:8080/registry/login");
+    //sends request to login
+    public static void login(KeyPair keyPair, String uuid) throws IOException {
+        URL url = new URL("http://localhost:8080/registry/login");
 
         connectSetter(url);
 
@@ -162,8 +166,9 @@ public class ClientApplication {
         tokenHttpHandler(jsonInputString);
     }
 
-    public static void update(String[] args) throws IOException{
-        URL url = new URL ("http://localhost:8080/registry/update");
+    //sends request to add
+    public static void update(String[] args) throws IOException {
+        URL url = new URL("http://localhost:8080/registry/update");
 
         connectSetter(url);
 
@@ -171,15 +176,30 @@ public class ClientApplication {
 
         System.out.println(jsonInputString);
 
-        httpHandler(jsonInputString);
+        String response = httpHandler(jsonInputString);
+        System.out.println(response);
     }
 
-    public static void list(String[] args) throws IOException{
-        URL url = new URL ("http://localhost:8080/registry/list");
+    //sends request to heartbeat
+    //should be executed every 5 seconds
+    public static void heartbeat() throws IOException {
+        URL url = new URL("http://localhost:8080/registry/heartbeat");
 
         connectSetter(url);
 
-        if(args[1].equals("")){
+        String jsonInputString = "";
+
+        String response = httpHandler(jsonInputString);
+        System.out.println(response);
+    }
+
+    //sends request to list
+    public static void list(String[] args) throws IOException {
+        URL url = new URL("http://localhost:8080/registry/list");
+
+        connectSetter(url);
+
+        if (args[1].equals("")) {
             args[1] = null;
         }
 
@@ -187,12 +207,14 @@ public class ClientApplication {
 
         System.out.println(jsonInputString);
 
-        httpHandler(jsonInputString);
+        String response = httpHandler(jsonInputString);
+        System.out.println(response);
     }
 
+    //sends request to add
     //only for testing
-    public static void delete(String uuid) throws IOException{
-        URL url = new URL ("http://localhost:8080/registry/delete");
+    public static void delete(String uuid) throws IOException {
+        URL url = new URL("http://localhost:8080/registry/delete");
 
         connectSetter(url);
 
@@ -200,6 +222,7 @@ public class ClientApplication {
 
         System.out.println(jsonInputString);
 
-        httpHandler(jsonInputString);
+        String response = httpHandler(jsonInputString);
+        System.out.println(response);
     }
 }

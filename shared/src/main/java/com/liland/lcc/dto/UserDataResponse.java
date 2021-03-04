@@ -1,6 +1,6 @@
 package com.liland.lcc.dto;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 public class UserDataResponse {
 
@@ -9,9 +9,9 @@ public class UserDataResponse {
     private String instancetype;
     private String version;
     private SystemStatus status;
-    private Date timestamp;
+    private LocalDateTime timestamp;
 
-    public UserDataResponse(String uuid, String publickey, String instancetype, String version, SystemStatus status, Date timestamp){
+    public UserDataResponse(String uuid, String publickey, String instancetype, String version, SystemStatus status, LocalDateTime timestamp){
         this.uuid = uuid;
         this.publickey = publickey;
         this.instancetype = instancetype;
@@ -40,7 +40,7 @@ public class UserDataResponse {
         return status;
     }
 
-    public Date getTimestamp(){
+    public LocalDateTime getTimestamp(){
         return timestamp;
     }
 
@@ -64,7 +64,7 @@ public class UserDataResponse {
         this.status = status;
     }
 
-    public void setTimestamp(Date timestamp){
+    public void setTimestamp(LocalDateTime timestamp){
         this.timestamp = timestamp;
     }
 }

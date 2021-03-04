@@ -5,33 +5,27 @@ public class LoginRequest {
     private String signature;
     private String msg;
 
-    /*public LoginRequest(String uuid, String signature, String msg){
-        this.uuid = uuid;
-        this.signature = signature;
-        this.msg = msg;
-    }*/
-
-    public String getUuid(){
+    public String getUuid() {
         return uuid;
     }
 
-    public String getSignature(){
+    public String getSignature() {
         return signature;
     }
 
-    public String getMsg(){
+    public String getMsg() {
         return msg;
     }
 
-    public void setUuid(String uuid){
+    public void setUuid(String uuid) {
         this.uuid = uuid;
     }
 
-    public void setSignature(String signature){
+    public void setSignature(String signature) {
         this.signature = signature;
     }
 
-    public void setMsg(String msg){
+    public void setMsg(String msg) {
         this.msg = msg;
     }
 }

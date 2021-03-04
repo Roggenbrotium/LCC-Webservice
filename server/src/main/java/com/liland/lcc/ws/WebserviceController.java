@@ -6,8 +6,7 @@ import com.liland.lcc.dto.ResponseStatus;
 import com.liland.lcc.dto.*;
 import org.hibernate.engine.jdbc.BlobProxy;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,10 +20,7 @@ import java.security.*;
 import java.security.spec.X509EncodedKeySpec;
 import java.sql.Blob;
 import java.sql.SQLException;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 import static com.auth0.jwt.algorithms.Algorithm.HMAC512;
@@ -38,14 +34,15 @@ public class WebserviceController {
     @Autowired
     private DataRepository datarepository;
 
-    //for user
+    //saves a new system to the database
+    //does not require token
     @PostMapping(value = "/registry/add", consumes = "application/json", produces = "application/json")
-    public ResponseEntity<StatusResponse> add(@RequestBody UserDataRequest data){
-        if (data.getUuid().length() != 36){
-            return new ResponseEntity<StatusResponse>(new StatusResponse(ResponseStatus.INVALID_REQUEST), HttpStatus.OK);
+    public ResponseEntity<StatusResponse> add(@RequestBody UserDataRequest data) {
+        if (data.getUuid().length() != 36) {
+            return ResponseEntity.ok().body(new StatusResponse(ResponseStatus.INVALID_REQUEST));
         } else {
             boolean exists = datarepository.existsByUuid(data.getUuid());
-            if (!exists){
+            if (!exists) {
                 UserDataDB userDataDB = new UserDataDB();
                 userDataDB.setUuid(data.getUuid());
                 byte[] bytes = data.getPublickey().getBytes(StandardCharsets.UTF_8);
@@ -55,49 +52,49 @@ public class WebserviceController {
                 userDataDB.setVersion(data.getVersion());
                 userDataDB.setStatus(SystemStatus.PENDING);
                 datarepository.save(userDataDB);
-                return new ResponseEntity<StatusResponse>(new StatusResponse(ResponseStatus.OK), HttpStatus.OK);
+                return ResponseEntity.ok().body(new StatusResponse(ResponseStatus.OK));
             } else {
-                return new ResponseEntity<StatusResponse>(new StatusResponse(ResponseStatus.KNOWN_UUID), HttpStatus.OK);
+                return ResponseEntity.ok().body(new StatusResponse(ResponseStatus.KNOWN_UUID));
             }
         }
     }
 
-    //for admin
+    //accepts or rejects a system
     @PostMapping(value = "/registry/adopt", consumes = "application/json", produces = "application/json")
     public ResponseEntity<StatusResponse> adopt(@RequestBody AdoptRequest data) {
-        if (data.getUuid().length() != 36){
-            return new ResponseEntity<StatusResponse>(new StatusResponse(ResponseStatus.INVALID_REQUEST), HttpStatus.OK);
+        if (data.getUuid().length() != 36) {
+            return ResponseEntity.ok().body(new StatusResponse(ResponseStatus.INVALID_REQUEST));
         } else {
             boolean exists = datarepository.existsByUuid(data.getUuid());
-            if (!exists){
-                return new ResponseEntity<StatusResponse>(new StatusResponse(ResponseStatus.UNKNOWN_UUID), HttpStatus.OK);
+            if (!exists) {
+                return ResponseEntity.ok().body(new StatusResponse(ResponseStatus.UNKNOWN_UUID));
             } else {
                 UserDataDB userData = datarepository.findByUuid(data.getUuid());
-                if(data.getAdopt()){
+                if (data.getAdopt()) {
                     userData.setStatus(SystemStatus.ADOPTED);
                 } else {
                     userData.setStatus(SystemStatus.REJECTED);
                 }
                 datarepository.save(userData);
-                return new ResponseEntity<StatusResponse>(new StatusResponse(ResponseStatus.OK), HttpStatus.OK);
+                return ResponseEntity.ok().body(new StatusResponse(ResponseStatus.OK));
             }
         }
     }
 
-    //for user
+    //updates version of a system in the database
     @PostMapping(value = "/registry/update", consumes = "application/json", produces = "application/json")
     public ResponseEntity<StatusResponse> update(@RequestBody UpdateRequest data, @RequestHeader String Authorization) {
         String uuid = getUuidFromJwtToken(Authorization);
         UserDataDB userData = datarepository.findByUuid(uuid);
         userData.setVersion(data.getVersion());
         datarepository.save(userData);
-        return new ResponseEntity<StatusResponse>(new StatusResponse(ResponseStatus.OK), HttpStatus.OK);
+        return ResponseEntity.ok().body(new StatusResponse(ResponseStatus.OK));
     }
 
-    //for admin
+    //lists all systems in the database with optional filters
     @PostMapping(value = "/registry/list", consumes = "application/json", produces = "application/json")
     @Transactional
-    public ResponseEntity<ListResponse> list(@RequestBody FilterRequest filter, @RequestHeader String Authorization) throws SQLException {
+    public ResponseEntity<ListResponse> list(@RequestBody FilterRequest filter) throws SQLException {
         String instancetype = filter.getFilter().getInstancetype();
         SystemStatus status = filter.getFilter().getStatus();
         List<UserDataDB> userData;
@@ -124,30 +121,28 @@ public class WebserviceController {
                     userDataDB.getStatus(), userDataDB.getTimestamp()));
         }
 
-        return new ResponseEntity<ListResponse>(new ListResponse(ResponseStatus.OK, userDataResponses), HttpStatus.OK);
+        return ResponseEntity.ok().body(new ListResponse(ResponseStatus.OK, userDataResponses));
     }
 
-    //for user
+    //saves/updates the timestamp of a specific system in the database
     @PostMapping(value = "/registry/heartbeat", consumes = "application/json", produces = "application/json")
-    public ResponseEntity<StatusResponse> heartbeat(@RequestBody UserDataRequest data) throws ParseException {
-        UserDataDB userData = datarepository.findByUuid(data.getUuid());
-        if (userData.getStatus() != SystemStatus.ADOPTED){
-            return new ResponseEntity<StatusResponse>(new StatusResponse(ResponseStatus.NOT_ADOPTED), HttpStatus.OK);
+    public ResponseEntity<StatusResponse> heartbeat(@RequestHeader String Authorization) {
+        UserDataDB userData = datarepository.findByUuid(getUuidFromJwtToken(Authorization));
+        if (userData.getStatus() != SystemStatus.ADOPTED) {
+            return ResponseEntity.ok().body(new StatusResponse(ResponseStatus.NOT_ADOPTED));
         } else {
-            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
-            LocalDateTime now = LocalDateTime.now();
-            userData.setTimestamp(new SimpleDateFormat("yyyy/MM/dd HH:mm:ss").parse(dtf.format(now)));
+            userData.setTimestamp(LocalDateTime.now().withNano(0));
             datarepository.save(userData);
-            return new ResponseEntity<StatusResponse>(new StatusResponse(ResponseStatus.OK), HttpStatus.OK);
+            return ResponseEntity.ok().body(new StatusResponse(ResponseStatus.OK));
         }
     }
 
-    //for user
+    //verifies the received signature and creates JWT-token for later usage
     @PostMapping(value = "/registry/login", consumes = "application/json", produces = "application/json")
     @Transactional
-    public ResponseEntity<String> login(@RequestBody LoginRequest data) throws Exception {
+    public ResponseEntity<StatusResponse> login(@RequestBody LoginRequest data) throws Exception {
         UserDataDB userDataDB = datarepository.findByUuid(data.getUuid());
-        if(userDataDB.getStatus() == SystemStatus.ADOPTED){
+        if (userDataDB.getStatus() == SystemStatus.ADOPTED) {
             Blob blob = userDataDB.getPublickey();
             String publicKey = new String(userDataDB.getPublickey().getBytes(1L, (int) blob.length()));
 
@@ -158,38 +153,41 @@ public class WebserviceController {
 
             boolean verify = verify(Base64.getDecoder().decode(data.getSignature()), pubKey, data.getMsg());
 
-            if (verify){
-                return new ResponseEntity<String>(generateJwtToken(data.getUuid()), HttpStatus.OK);
+            if (verify) {
+                HttpHeaders httpHeaders = new HttpHeaders();
+                httpHeaders.set("Authentication", generateJwtToken(data.getUuid()));
+                return ResponseEntity.ok().headers(httpHeaders).body(new StatusResponse(ResponseStatus.OK));
+            } else {
+                return ResponseEntity.ok().body(new StatusResponse(ResponseStatus.INVALID_REQUEST));
             }
-            else{
-                return new ResponseEntity<String>("0", HttpStatus.OK);
-            }
-        }
-        else {
-            return new ResponseEntity<String>("1", HttpStatus.OK);
+        } else {
+            return ResponseEntity.ok().body(new StatusResponse(ResponseStatus.NOT_ADOPTED));
         }
     }
 
+    //deletes a specific system from the database
     //only for testing
     @PostMapping(value = "/registry/delete", consumes = "application/json", produces = "application/json")
     public ResponseEntity<StatusResponse> delete(@RequestHeader String Authorization) {
         String uuid = getUuidFromJwtToken(Authorization);
         UserDataDB userData = datarepository.findByUuid(uuid);
         datarepository.delete(userData);
-        return new ResponseEntity<StatusResponse>(new StatusResponse(ResponseStatus.OK), HttpStatus.OK);
+        return ResponseEntity.ok().body(new StatusResponse(ResponseStatus.OK));
     }
 
+    //decrypts the received signature and compares the newly created hash with the decrypted one
     public static boolean verify(byte[] signature, Key publicKey, String message) throws IllegalBlockSizeException, InvalidKeyException,
             BadPaddingException, NoSuchAlgorithmException, NoSuchPaddingException {
         Cipher cipher = Cipher.getInstance("RSA");
         cipher.init(Cipher.DECRYPT_MODE, publicKey);
-        byte [] decryptedMsg = cipher.doFinal(signature);
+        byte[] decryptedMsg = cipher.doFinal(signature);
 
         byte[] messageBytes = message.getBytes(UTF_8);
         MessageDigest md = MessageDigest.getInstance("SHA-256");
 
         return Arrays.equals(md.digest(messageBytes), decryptedMsg);
     }
+
 
     public String generateJwtToken(String uuid) {
         return JWT.create()
