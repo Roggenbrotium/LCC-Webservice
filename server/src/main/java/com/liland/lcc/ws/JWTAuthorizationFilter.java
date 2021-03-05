@@ -16,31 +16,33 @@ import java.util.ArrayList;
 
 import static com.liland.lcc.ws.SecurityConstants.*;
 
-public class JWTAuthorizationFilter extends BasicAuthenticationFilter {
-
-    public JWTAuthorizationFilter(AuthenticationManager authManager) {
+public class JWTAuthorizationFilter extends BasicAuthenticationFilter{
+    
+    public JWTAuthorizationFilter(AuthenticationManager authManager){
         super(authManager);
     }
-
-    //checks the Authorization-header for a specific prefix then executes getAuthentication
-    //if the return value isn't null the request will be through
+    
+    /**
+     * Checks the Authorization-header for a specific prefix then executes getAuthentication.
+     * If the return value isn't null the request will be let through.
+     */
     @Override
     protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res,
-                                    FilterChain chain) throws IOException, ServletException {
+                                    FilterChain chain) throws IOException, ServletException{
         String header = req.getHeader(HEADER_STRING);
-
-        if (header == null || !header.startsWith(TOKEN_PREFIX)) {
+        
+        if(header == null || !header.startsWith(TOKEN_PREFIX)){
             chain.doFilter(req, res);
             return;
         }
-
+        
         UsernamePasswordAuthenticationToken authentication = getAuthentication(req);
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
         chain.doFilter(req, res);
     }
-
-    //checks JWT authentication
+    
+    /**Checks JWT authentication.*/
     private UsernamePasswordAuthenticationToken getAuthentication(HttpServletRequest request) {
         String token = request.getHeader(HEADER_STRING);
 

@@ -4,7 +4,7 @@ public class UserDataRequest {
 
     private String uuid;
     private String publickey;
-    private String instancetype;
+    private InstanceType instancetype;
     private String version;
 
     public String getUuid() {
@@ -15,7 +15,7 @@ public class UserDataRequest {
         return publickey;
     }
 
-    public String getInstancetype() {
+    public InstanceType getInstancetype() {
         return instancetype;
     }
 
@@ -31,7 +31,7 @@ public class UserDataRequest {
         this.publickey = publickey;
     }
 
-    public void setInstancetype(String instancetype) {
+    public void setInstancetype(InstanceType instancetype) {
         this.instancetype = instancetype;
     }
 

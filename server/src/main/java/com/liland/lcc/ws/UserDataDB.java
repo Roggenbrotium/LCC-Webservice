@@ -1,5 +1,6 @@
 package com.liland.lcc.ws;
 
+import com.liland.lcc.dto.InstanceType;
 import com.liland.lcc.dto.SystemStatus;
 
 import javax.persistence.*;
@@ -16,8 +17,8 @@ public class UserDataDB {
     private String uuid;
 
     @Lob
-    private Blob publickey;
-    private String instancetype;
+    private Blob publicKey;
+    private InstanceType instanceType;
     private String version;
     private SystemStatus status;
     private LocalDateTime timestamp;
@@ -26,12 +27,12 @@ public class UserDataDB {
         return uuid;
     }
 
-    public Blob getPublickey() {
-        return publickey;
+    public Blob getPublicKey() {
+        return publicKey;
     }
 
-    public String getInstancetype() {
-        return instancetype;
+    public InstanceType getInstanceType() {
+        return instanceType;
     }
 
     public String getVersion() {
@@ -50,12 +51,12 @@ public class UserDataDB {
         this.uuid = uuid;
     }
 
-    public void setPublickey(Blob publickey) {
-        this.publickey = publickey;
+    public void setPublicKey(Blob publicKey) {
+        this.publicKey = publicKey;
     }
 
-    public void setInstancetype(String instancetype) {
-        this.instancetype = instancetype;
+    public void setInstanceType(InstanceType instanceType) {
+        this.instanceType = instanceType;
     }
 
     public void setVersion(String version) {

@@ -1,7 +1,7 @@
 package com.liland.lcc.dto;
 
 public enum InstanceType {
-    IVENTCLOUD(1), IGOV_APP(2);
+    IVENTCLOUD(0), IGOV_APP(1);
 
     public final Integer id;
 

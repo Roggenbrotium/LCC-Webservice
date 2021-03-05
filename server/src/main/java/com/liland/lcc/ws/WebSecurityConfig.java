@@ -8,18 +8,18 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 
 @Configuration
 @EnableWebSecurity
-public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
-
-    @Override
-    protected void configure(HttpSecurity http) throws Exception {
-        http.cors().and().csrf().disable()
-                .exceptionHandling().and()
-                .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
-                .addFilter(new JWTAuthorizationFilter(authenticationManager()))
-                .authorizeRequests().antMatchers("/registry/add").permitAll()
-                .antMatchers("/registry/adopt").permitAll()
-                .antMatchers("/registry/login").permitAll()
-                .anyRequest().authenticated();
-
-    }
+public class WebSecurityConfig extends WebSecurityConfigurerAdapter{
+	
+	@Override
+	protected void configure(HttpSecurity http) throws Exception{
+		http.cors().and().csrf().disable()
+				.exceptionHandling().and()
+				.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
+				.addFilter(new JWTAuthorizationFilter(authenticationManager()))
+				.authorizeRequests().antMatchers("/registry/add").permitAll()
+				.antMatchers("/registry/adopt").permitAll()
+				.antMatchers("/registry/login").permitAll()
+				.anyRequest().authenticated();
+		
+	}
 }

@@ -2,13 +2,13 @@ package com.liland.lcc.dto;
 
 public class FilterStates {
     private SystemStatus status;
-    private String instancetype;
+    private InstanceType instancetype;
 
     public SystemStatus getStatus() {
         return status;
     }
 
-    public String getInstancetype() {
+    public InstanceType getInstancetype() {
         return instancetype;
     }
 
@@ -16,7 +16,7 @@ public class FilterStates {
         this.status = status;
     }
 
-    public void setInstancetype(String instancetype) {
+    public void setInstancetype(InstanceType instancetype) {
         this.instancetype = instancetype;
     }
 }

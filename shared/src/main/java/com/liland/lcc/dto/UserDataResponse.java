@@ -6,12 +6,12 @@ public class UserDataResponse {
 
     private String uuid;
     private String publickey;
-    private String instancetype;
+    private InstanceType instancetype;
     private String version;
     private SystemStatus status;
     private LocalDateTime timestamp;
 
-    public UserDataResponse(String uuid, String publickey, String instancetype, String version, SystemStatus status, LocalDateTime timestamp){
+    public UserDataResponse(String uuid, String publickey, InstanceType instancetype, String version, SystemStatus status, LocalDateTime timestamp){
         this.uuid = uuid;
         this.publickey = publickey;
         this.instancetype = instancetype;
@@ -28,7 +28,7 @@ public class UserDataResponse {
         return publickey;
     }
 
-    public String getInstancetype(){
+    public InstanceType getInstancetype(){
         return instancetype;
     }
 
@@ -52,7 +52,7 @@ public class UserDataResponse {
         this.publickey = publickey;
     }
 
-    public void setInstancetype(String instancetype){
+    public void setInstancetype(InstanceType instancetype){
         this.instancetype = instancetype;
     }
 

@@ -29,174 +29,212 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 @RestController
 @RequestMapping(method = {RequestMethod.GET, RequestMethod.PUT})
-public class WebserviceController {
-
+public class WebserviceController{
+    
     @Autowired
-    private DataRepository datarepository;
-
-    //saves a new system to the database
-    //does not require token
+    private DataRepository dataRepository;
+    
+    /**
+     * Decrypts the received signature and compares the newly created hash with the decrypted one.
+     */
+    public static boolean verifyKey(byte[] signature, Key publicKey, String message) throws IllegalBlockSizeException, InvalidKeyException,
+            BadPaddingException, NoSuchAlgorithmException, NoSuchPaddingException{
+        Cipher cipher = Cipher.getInstance("RSA");
+        cipher.init(Cipher.DECRYPT_MODE, publicKey);
+        byte[] decryptedMsg = cipher.doFinal(signature);
+        
+        byte[] messageBytes = message.getBytes(UTF_8);
+        MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
+        
+        return Arrays.equals(messageDigest.digest(messageBytes), decryptedMsg);
+    }
+    
+    /**
+     * Saves a new system to the database.
+     * Does not require token.
+     */
     @PostMapping(value = "/registry/add", consumes = "application/json", produces = "application/json")
-    public ResponseEntity<StatusResponse> add(@RequestBody UserDataRequest data) {
-        if (data.getUuid().length() != 36) {
+    public ResponseEntity<StatusResponse> add(@RequestBody UserDataRequest userDataRequest){
+        if(userDataRequest.getUuid().length() != 36){
             return ResponseEntity.ok().body(new StatusResponse(ResponseStatus.INVALID_REQUEST));
-        } else {
-            boolean exists = datarepository.existsByUuid(data.getUuid());
-            if (!exists) {
+        }else{
+            if(dataRepository.existsByUuid(userDataRequest.getUuid())){
                 UserDataDB userDataDB = new UserDataDB();
-                userDataDB.setUuid(data.getUuid());
-                byte[] bytes = data.getPublickey().getBytes(StandardCharsets.UTF_8);
-                Blob blob = BlobProxy.generateProxy(bytes);
-                userDataDB.setPublickey(blob);
-                userDataDB.setInstancetype(data.getInstancetype());
-                userDataDB.setVersion(data.getVersion());
+                userDataDB.setUuid(userDataRequest.getUuid());
+                
+                userDataDB.setInstanceType(userDataRequest.getInstancetype());
+                if(userDataDB.getInstanceType() == null){
+                    return ResponseEntity.ok().body(new StatusResponse(ResponseStatus.INVALID_REQUEST));
+                }
+                
+                userDataDB.setVersion(userDataRequest.getVersion());
                 userDataDB.setStatus(SystemStatus.PENDING);
-                datarepository.save(userDataDB);
+                
+                byte[] bytes = userDataRequest.getPublickey().getBytes(StandardCharsets.UTF_8);
+                Blob blob = BlobProxy.generateProxy(bytes);
+                userDataDB.setPublicKey(blob);
+                
+                dataRepository.save(userDataDB);
                 return ResponseEntity.ok().body(new StatusResponse(ResponseStatus.OK));
-            } else {
+            }else{
                 return ResponseEntity.ok().body(new StatusResponse(ResponseStatus.KNOWN_UUID));
             }
         }
     }
-
-    //accepts or rejects a system
+    
+    /**
+     * Accepts or rejects a system.
+     * Does not require token but normally it would.
+     */
     @PostMapping(value = "/registry/adopt", consumes = "application/json", produces = "application/json")
-    public ResponseEntity<StatusResponse> adopt(@RequestBody AdoptRequest data) {
-        if (data.getUuid().length() != 36) {
+    @Transactional
+    public ResponseEntity<StatusResponse> adopt(@RequestBody AdoptRequest adoptRequest){
+        if(adoptRequest.getUuid().length() != 36){
             return ResponseEntity.ok().body(new StatusResponse(ResponseStatus.INVALID_REQUEST));
-        } else {
-            boolean exists = datarepository.existsByUuid(data.getUuid());
-            if (!exists) {
+        }else{
+            if(dataRepository.existsByUuid(adoptRequest.getUuid())){
                 return ResponseEntity.ok().body(new StatusResponse(ResponseStatus.UNKNOWN_UUID));
-            } else {
-                UserDataDB userData = datarepository.findByUuid(data.getUuid());
-                if (data.getAdopt()) {
-                    userData.setStatus(SystemStatus.ADOPTED);
-                } else {
-                    userData.setStatus(SystemStatus.REJECTED);
+            }else{
+                if(adoptRequest.getAdopt()){
+                    dataRepository.updateStatus(SystemStatus.ADOPTED.getId(), adoptRequest.getUuid());
+                }else{
+                    dataRepository.updateStatus(SystemStatus.REJECTED.getId(), adoptRequest.getUuid());
                 }
-                datarepository.save(userData);
                 return ResponseEntity.ok().body(new StatusResponse(ResponseStatus.OK));
             }
         }
     }
-
-    //updates version of a system in the database
+    
+    /**
+     * Updates version of a system in the database.
+     * Does require token.
+     */
     @PostMapping(value = "/registry/update", consumes = "application/json", produces = "application/json")
-    public ResponseEntity<StatusResponse> update(@RequestBody UpdateRequest data, @RequestHeader String Authorization) {
+    @Transactional
+    public ResponseEntity<StatusResponse> update(@RequestBody UpdateRequest updateRequest, @RequestHeader String Authorization){
         String uuid = getUuidFromJwtToken(Authorization);
-        UserDataDB userData = datarepository.findByUuid(uuid);
-        userData.setVersion(data.getVersion());
-        datarepository.save(userData);
-        return ResponseEntity.ok().body(new StatusResponse(ResponseStatus.OK));
+        if(dataRepository.existsByUuid(uuid)){
+            dataRepository.updateVersion(updateRequest.getVersion(), uuid);
+            return ResponseEntity.ok().body(new StatusResponse(ResponseStatus.OK));
+        }
+        return ResponseEntity.ok().body(new StatusResponse(ResponseStatus.UNKNOWN_UUID));
     }
-
-    //lists all systems in the database with optional filters
+    
+    /**
+     * Lists all systems in the database with optional filters.
+     * Does require token.
+     */
     @PostMapping(value = "/registry/list", consumes = "application/json", produces = "application/json")
     @Transactional
-    public ResponseEntity<ListResponse> list(@RequestBody FilterRequest filter) throws SQLException {
-        String instancetype = filter.getFilter().getInstancetype();
-        SystemStatus status = filter.getFilter().getStatus();
+    public ResponseEntity<ListResponse> list(@RequestBody FilterRequest filterRequest) throws SQLException{
+        InstanceType instancetype = filterRequest.getFilter().getInstancetype();
+        SystemStatus status = filterRequest.getFilter().getStatus();
         List<UserDataDB> userData;
         List<UserDataResponse> userDataResponses = new ArrayList<>();
-
-        if (status != null) {
-            if (!instancetype.isEmpty()) {
-                userData = datarepository.findByInstancetypeAndStatus(instancetype, status);
-            } else {
-                userData = datarepository.findByStatus(status);
+        
+        if(status != null){
+            if(instancetype != null){
+                userData = dataRepository.findByInstancetypeAndStatus(instancetype, status);
+            }else{
+                userData = dataRepository.findByStatus(status);
             }
-        } else {
-            if (!instancetype.isEmpty()) {
-                userData = datarepository.findByInstancetype(instancetype);
-            } else {
-                userData = datarepository.findAll();
+        }else{
+            if(instancetype != null){
+                userData = dataRepository.findByInstancetype(instancetype);
+            }else{
+                userData = dataRepository.findAll();
             }
         }
-
-        for (UserDataDB userDataDB : userData) {
-            Blob blob = userDataDB.getPublickey();
-            String pkey = new String(userDataDB.getPublickey().getBytes(1L, (int) blob.length()));
-            userDataResponses.add(new UserDataResponse(userDataDB.getUuid(), pkey, userDataDB.getInstancetype(), userDataDB.getVersion(),
+        
+        for(UserDataDB userDataDB : userData){
+            Blob blob = userDataDB.getPublicKey();
+            String pKey = new String(userDataDB.getPublicKey().getBytes(1L, (int) blob.length()));
+            userDataResponses.add(new UserDataResponse(userDataDB.getUuid(), pKey, userDataDB.getInstanceType(), userDataDB.getVersion(),
                     userDataDB.getStatus(), userDataDB.getTimestamp()));
         }
-
+        
         return ResponseEntity.ok().body(new ListResponse(ResponseStatus.OK, userDataResponses));
     }
-
-    //saves/updates the timestamp of a specific system in the database
+    
+    /**
+     * Updates the timestamp of a specific system in the database.
+     * Does require token.
+     */
     @PostMapping(value = "/registry/heartbeat", consumes = "application/json", produces = "application/json")
-    public ResponseEntity<StatusResponse> heartbeat(@RequestHeader String Authorization) {
-        UserDataDB userData = datarepository.findByUuid(getUuidFromJwtToken(Authorization));
-        if (userData.getStatus() != SystemStatus.ADOPTED) {
+    @Transactional
+    public ResponseEntity<StatusResponse> heartbeat(@RequestHeader String Authorization){
+        String uuid = getUuidFromJwtToken(Authorization);
+        UserDataDB userData = dataRepository.findByUuid(uuid);
+        if(userData.getStatus() != SystemStatus.ADOPTED){
             return ResponseEntity.ok().body(new StatusResponse(ResponseStatus.NOT_ADOPTED));
-        } else {
-            userData.setTimestamp(LocalDateTime.now().withNano(0));
-            datarepository.save(userData);
+        }else{
+            dataRepository.updateTimestamp(LocalDateTime.now().withNano(0), uuid);
             return ResponseEntity.ok().body(new StatusResponse(ResponseStatus.OK));
         }
     }
-
-    //verifies the received signature and creates JWT-token for later usage
+    
+    /**
+     * Verifies the received signature and creates JWT-token for later usage.
+     * Does not require token.
+     */
     @PostMapping(value = "/registry/login", consumes = "application/json", produces = "application/json")
     @Transactional
-    public ResponseEntity<StatusResponse> login(@RequestBody LoginRequest data) throws Exception {
-        UserDataDB userDataDB = datarepository.findByUuid(data.getUuid());
-        if (userDataDB.getStatus() == SystemStatus.ADOPTED) {
-            Blob blob = userDataDB.getPublickey();
-            String publicKey = new String(userDataDB.getPublickey().getBytes(1L, (int) blob.length()));
-
+    public ResponseEntity<StatusResponse> login(@RequestBody LoginRequest data) throws Exception{
+        UserDataDB userDataDB = dataRepository.findByUuid(data.getUuid());
+        if(userDataDB == null){
+            return ResponseEntity.ok().body(new StatusResponse(ResponseStatus.INVALID_REQUEST));
+        }
+        
+        if(userDataDB.getStatus() == SystemStatus.ADOPTED){
+            Blob blob = userDataDB.getPublicKey();
+            String publicKey = new String(userDataDB.getPublicKey().getBytes(1L, (int) blob.length()));
+            
             byte[] publicBytes = Base64.getDecoder().decode(publicKey);
             X509EncodedKeySpec keySpec = new X509EncodedKeySpec(publicBytes);
             KeyFactory keyFactory = KeyFactory.getInstance("RSA");
             PublicKey pubKey = keyFactory.generatePublic(keySpec);
-
-            boolean verify = verify(Base64.getDecoder().decode(data.getSignature()), pubKey, data.getMsg());
-
-            if (verify) {
+            
+            boolean verify = verifyKey(Base64.getDecoder().decode(data.getSignature()), pubKey, data.getMsg());
+            
+            if(verify){
                 HttpHeaders httpHeaders = new HttpHeaders();
                 httpHeaders.set("Authentication", generateJwtToken(data.getUuid()));
                 return ResponseEntity.ok().headers(httpHeaders).body(new StatusResponse(ResponseStatus.OK));
-            } else {
+            }else{
                 return ResponseEntity.ok().body(new StatusResponse(ResponseStatus.INVALID_REQUEST));
             }
-        } else {
+        }else{
             return ResponseEntity.ok().body(new StatusResponse(ResponseStatus.NOT_ADOPTED));
         }
     }
-
-    //deletes a specific system from the database
-    //only for testing
+    
+    /**
+     * Deletes a specific system from the database.
+     * Does require token.
+     * Used only for testing.
+     */
     @PostMapping(value = "/registry/delete", consumes = "application/json", produces = "application/json")
-    public ResponseEntity<StatusResponse> delete(@RequestHeader String Authorization) {
+    public ResponseEntity<StatusResponse> delete(@RequestHeader String Authorization){
         String uuid = getUuidFromJwtToken(Authorization);
-        UserDataDB userData = datarepository.findByUuid(uuid);
-        datarepository.delete(userData);
+        UserDataDB userData = dataRepository.findByUuid(uuid);
+        dataRepository.delete(userData);
         return ResponseEntity.ok().body(new StatusResponse(ResponseStatus.OK));
     }
-
-    //decrypts the received signature and compares the newly created hash with the decrypted one
-    public static boolean verify(byte[] signature, Key publicKey, String message) throws IllegalBlockSizeException, InvalidKeyException,
-            BadPaddingException, NoSuchAlgorithmException, NoSuchPaddingException {
-        Cipher cipher = Cipher.getInstance("RSA");
-        cipher.init(Cipher.DECRYPT_MODE, publicKey);
-        byte[] decryptedMsg = cipher.doFinal(signature);
-
-        byte[] messageBytes = message.getBytes(UTF_8);
-        MessageDigest md = MessageDigest.getInstance("SHA-256");
-
-        return Arrays.equals(md.digest(messageBytes), decryptedMsg);
-    }
-
-
-    public String generateJwtToken(String uuid) {
+    
+    /**
+     * Generates a new token with a given uuid.
+     */
+    public String generateJwtToken(String uuid){
         return JWT.create()
                 .withSubject(uuid)
                 .withExpiresAt(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
                 .sign(HMAC512(SECRET.getBytes()));
     }
-
-    public String getUuidFromJwtToken(String token) {
+    
+    /**
+     * Gets the uuid of a given token.
+     */
+    public String getUuidFromJwtToken(String token){
         return JWT.require(Algorithm.HMAC512(SECRET.getBytes()))
                 .build()
                 .verify(token.replace(TOKEN_PREFIX, ""))

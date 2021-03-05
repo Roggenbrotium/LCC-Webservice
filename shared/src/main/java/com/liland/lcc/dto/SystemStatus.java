@@ -8,4 +8,8 @@ public enum SystemStatus {
     SystemStatus(Integer id) {
         this.id = id;
     }
+    
+    public int getId(){
+        return id;
+    }
 }
