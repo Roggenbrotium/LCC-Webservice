@@ -34,36 +34,24 @@ public class WebserviceController{
     @Autowired
     private DataRepository dataRepository;
     
-    /**
-     * Decrypts the received signature and compares the newly created hash with the decrypted one.
-     */
-    public static boolean verifyKey(byte[] signature, Key publicKey, String message) throws IllegalBlockSizeException, InvalidKeyException,
-            BadPaddingException, NoSuchAlgorithmException, NoSuchPaddingException{
-        Cipher cipher = Cipher.getInstance("RSA");
-        cipher.init(Cipher.DECRYPT_MODE, publicKey);
-        byte[] decryptedMsg = cipher.doFinal(signature);
-        
-        byte[] messageBytes = message.getBytes(UTF_8);
-        MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
-        
-        return Arrays.equals(messageDigest.digest(messageBytes), decryptedMsg);
-    }
+    @Autowired
+    private TenantRepository tenantRepository;
     
     /**
      * Saves a new system to the database.
      * Does not require token.
      */
     @PostMapping(value = "/registry/add", consumes = "application/json", produces = "application/json")
-    public ResponseEntity<StatusResponse> add(@RequestBody UserDataRequest userDataRequest){
+    public ResponseEntity<StatusResponse> systemAdd(@RequestBody UserDataRequest userDataRequest){
         if(userDataRequest.getUuid().length() != 36){
             return ResponseEntity.ok().body(new StatusResponse(ResponseStatus.INVALID_REQUEST));
         }else{
-            if(dataRepository.existsByUuid(userDataRequest.getUuid())){
+            if(!dataRepository.existsByUuid(userDataRequest.getUuid())){
                 UserDataDB userDataDB = new UserDataDB();
                 userDataDB.setUuid(userDataRequest.getUuid());
                 
-                userDataDB.setInstanceType(userDataRequest.getInstancetype());
-                if(userDataDB.getInstanceType() == null){
+                userDataDB.setInstancetype(userDataRequest.getInstancetype());
+                if(userDataDB.getInstancetype() == null){
                     return ResponseEntity.ok().body(new StatusResponse(ResponseStatus.INVALID_REQUEST));
                 }
                 
@@ -72,7 +60,7 @@ public class WebserviceController{
                 
                 byte[] bytes = userDataRequest.getPublickey().getBytes(StandardCharsets.UTF_8);
                 Blob blob = BlobProxy.generateProxy(bytes);
-                userDataDB.setPublicKey(blob);
+                userDataDB.setPublickey(blob);
                 
                 dataRepository.save(userDataDB);
                 return ResponseEntity.ok().body(new StatusResponse(ResponseStatus.OK));
@@ -88,11 +76,11 @@ public class WebserviceController{
      */
     @PostMapping(value = "/registry/adopt", consumes = "application/json", produces = "application/json")
     @Transactional
-    public ResponseEntity<StatusResponse> adopt(@RequestBody AdoptRequest adoptRequest){
+    public ResponseEntity<StatusResponse> systemAdopt(@RequestBody AdoptRequest adoptRequest){
         if(adoptRequest.getUuid().length() != 36){
             return ResponseEntity.ok().body(new StatusResponse(ResponseStatus.INVALID_REQUEST));
         }else{
-            if(dataRepository.existsByUuid(adoptRequest.getUuid())){
+            if(!dataRepository.existsByUuid(adoptRequest.getUuid())){
                 return ResponseEntity.ok().body(new StatusResponse(ResponseStatus.UNKNOWN_UUID));
             }else{
                 if(adoptRequest.getAdopt()){
@@ -111,7 +99,7 @@ public class WebserviceController{
      */
     @PostMapping(value = "/registry/update", consumes = "application/json", produces = "application/json")
     @Transactional
-    public ResponseEntity<StatusResponse> update(@RequestBody UpdateRequest updateRequest, @RequestHeader String Authorization){
+    public ResponseEntity<StatusResponse> systemUpdate(@RequestBody UpdateRequest updateRequest, @RequestHeader String Authorization){
         String uuid = getUuidFromJwtToken(Authorization);
         if(dataRepository.existsByUuid(uuid)){
             dataRepository.updateVersion(updateRequest.getVersion(), uuid);
@@ -126,7 +114,7 @@ public class WebserviceController{
      */
     @PostMapping(value = "/registry/list", consumes = "application/json", produces = "application/json")
     @Transactional
-    public ResponseEntity<ListResponse> list(@RequestBody FilterRequest filterRequest) throws SQLException{
+    public ResponseEntity<UserListResponse> systemList(@RequestBody FilterRequest filterRequest) throws SQLException{
         InstanceType instancetype = filterRequest.getFilter().getInstancetype();
         SystemStatus status = filterRequest.getFilter().getStatus();
         List<UserDataDB> userData;
@@ -147,13 +135,13 @@ public class WebserviceController{
         }
         
         for(UserDataDB userDataDB : userData){
-            Blob blob = userDataDB.getPublicKey();
-            String pKey = new String(userDataDB.getPublicKey().getBytes(1L, (int) blob.length()));
-            userDataResponses.add(new UserDataResponse(userDataDB.getUuid(), pKey, userDataDB.getInstanceType(), userDataDB.getVersion(),
+            Blob blob = userDataDB.getPublickey();
+            String pKey = new String(userDataDB.getPublickey().getBytes(1L, (int) blob.length()));
+            userDataResponses.add(new UserDataResponse(userDataDB.getUuid(), pKey, userDataDB.getInstancetype(), userDataDB.getVersion(),
                     userDataDB.getStatus(), userDataDB.getTimestamp()));
         }
         
-        return ResponseEntity.ok().body(new ListResponse(ResponseStatus.OK, userDataResponses));
+        return ResponseEntity.ok().body(new UserListResponse(ResponseStatus.OK, userDataResponses));
     }
     
     /**
@@ -162,7 +150,7 @@ public class WebserviceController{
      */
     @PostMapping(value = "/registry/heartbeat", consumes = "application/json", produces = "application/json")
     @Transactional
-    public ResponseEntity<StatusResponse> heartbeat(@RequestHeader String Authorization){
+    public ResponseEntity<StatusResponse> systemHeartbeat(@RequestHeader String Authorization){
         String uuid = getUuidFromJwtToken(Authorization);
         UserDataDB userData = dataRepository.findByUuid(uuid);
         if(userData.getStatus() != SystemStatus.ADOPTED){
@@ -179,15 +167,15 @@ public class WebserviceController{
      */
     @PostMapping(value = "/registry/login", consumes = "application/json", produces = "application/json")
     @Transactional
-    public ResponseEntity<StatusResponse> login(@RequestBody LoginRequest data) throws Exception{
+    public ResponseEntity<StatusResponse> systemLogin(@RequestBody LoginRequest data) throws Exception{
         UserDataDB userDataDB = dataRepository.findByUuid(data.getUuid());
         if(userDataDB == null){
             return ResponseEntity.ok().body(new StatusResponse(ResponseStatus.INVALID_REQUEST));
         }
         
         if(userDataDB.getStatus() == SystemStatus.ADOPTED){
-            Blob blob = userDataDB.getPublicKey();
-            String publicKey = new String(userDataDB.getPublicKey().getBytes(1L, (int) blob.length()));
+            Blob blob = userDataDB.getPublickey();
+            String publicKey = new String(userDataDB.getPublickey().getBytes(1L, (int) blob.length()));
             
             byte[] publicBytes = Base64.getDecoder().decode(publicKey);
             X509EncodedKeySpec keySpec = new X509EncodedKeySpec(publicBytes);
@@ -214,11 +202,81 @@ public class WebserviceController{
      * Used only for testing.
      */
     @PostMapping(value = "/registry/delete", consumes = "application/json", produces = "application/json")
-    public ResponseEntity<StatusResponse> delete(@RequestHeader String Authorization){
+    public ResponseEntity<StatusResponse> systemDelete(@RequestHeader String Authorization){
         String uuid = getUuidFromJwtToken(Authorization);
         UserDataDB userData = dataRepository.findByUuid(uuid);
         dataRepository.delete(userData);
         return ResponseEntity.ok().body(new StatusResponse(ResponseStatus.OK));
+    }
+    
+    /**
+     * Saves a tenant of a specific system in the database.
+     * Does require token.
+     */
+    @PostMapping(value = "/ws/tenants/add", consumes = "application/json", produces = "application/json")
+    public ResponseEntity<StatusResponse> tenantAdd(@RequestBody TenantRequest tenantRequest, @RequestHeader String Authorization){
+        String uuid = getUuidFromJwtToken(Authorization);
+        UserDataDB userData = dataRepository.findByUuid(uuid);
+        TenantDB tenantDB = new TenantDB();
+        tenantDB.setExternalid(tenantRequest.getExternalid());
+        tenantDB.setSystemid(userData.getId());
+        tenantDB.setName(tenantRequest.getName());
+        tenantDB.setExpirationdate(tenantRequest.getExpirationdate());
+        tenantRepository.save(tenantDB);
+        return ResponseEntity.ok().body(new StatusResponse(ResponseStatus.OK));
+    }
+    
+    /**
+     * Updates a tenant of a specific system in the database.
+     * Does require token.
+     */
+    @PostMapping(value = "/ws/tenants/update", consumes = "application/json", produces = "application/json")
+    @Transactional
+    public ResponseEntity<StatusResponse> tenantUpdate(@RequestBody TenantRequest tenantRequest, @RequestHeader String Authorization){
+        String uuid = getUuidFromJwtToken(Authorization);
+        UserDataDB userData = dataRepository.findByUuid(uuid);
+        TenantDB tenantDB = tenantRepository.findBySystemidAndExternalid(userData.getId(), tenantRequest.getExternalid());
+        tenantDB.setName(tenantRequest.getName());
+        tenantDB.setExpirationdate(tenantRequest.getExpirationdate());
+        tenantRepository.save(tenantDB);
+        return ResponseEntity.ok().body(new StatusResponse(ResponseStatus.OK));
+    }
+    
+    /**
+     * Creates a list of tenant of a specific system in the database.
+     * Does require token.
+     */
+    //list unfinished for now
+    @PostMapping(value = "/ws/tenants/list", consumes = "application/json", produces = "application/json")
+    @Transactional
+    public ResponseEntity<TenantListResponse> tenantList(@RequestHeader String Authorization){
+        List<TenantDB> tenantDBList;
+        List<TenantResponse> tenantResponses = new ArrayList<>();
+    
+        tenantDBList = tenantRepository.findAll();
+    
+        for(TenantDB tenantDB : tenantDBList){
+            tenantResponses.add(new TenantResponse(tenantDB.getExternalid(), /*tenantDB.getSystemid()*/ "",
+                    tenantDB.getName(), tenantDB.getExpirationdate()));
+        }
+    
+        return ResponseEntity.ok().body(new TenantListResponse(ResponseStatus.OK, tenantResponses));
+    }
+    
+    
+    /**
+     * Decrypts the received signature and compares the newly created hash with the decrypted one.
+     */
+    public static boolean verifyKey(byte[] signature, Key publicKey, String message) throws IllegalBlockSizeException, InvalidKeyException,
+            BadPaddingException, NoSuchAlgorithmException, NoSuchPaddingException{
+        Cipher cipher = Cipher.getInstance("RSA");
+        cipher.init(Cipher.DECRYPT_MODE, publicKey);
+        byte[] decryptedMsg = cipher.doFinal(signature);
+        
+        byte[] messageBytes = message.getBytes(UTF_8);
+        MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
+        
+        return Arrays.equals(messageDigest.digest(messageBytes), decryptedMsg);
     }
     
     /**

@@ -25,14 +25,18 @@ class ClientApplicationTest {
         KeyPair keyPair = ClientApplication.keyGen();
         String uuid = ClientApplication.uuidGen();
         String[] args = {"", "IGOV_APP", "5.0.177"};
-        ClientApplication.add(args, keyPair, uuid);
-        ClientApplication.adopt(uuid, true);
-        ClientApplication.login(keyPair, uuid);
+        ClientApplication.systemAdd(args, keyPair, uuid);
+        ClientApplication.systemAdopt(uuid, true);
+        ClientApplication.systemLogin(keyPair, uuid);
         args = new String[]{"", "1.2.3"};
-        ClientApplication.update(args);
-        ClientApplication.heartbeat();
-        args = new String[]{"", "REJECTED", "IGOV_APP"};
-        ClientApplication.list(args);
+        ClientApplication.systemUpdate(args);
+        ClientApplication.systemHeartbeat();
+        args = new String[]{"", "ADOPTED", "IGOV_APP"};
+        ClientApplication.systemList(args);
+        args = new String[]{"", "123123", "blah", "2021-05-01"};
+        ClientApplication.tenantAdd(args);
+        args = new String[]{"", "123123", "blahblah", "2022-06-02"};
+        ClientApplication.tenantUpdate(args);
         //ClientApplication.delete(uuid);
     }
 }

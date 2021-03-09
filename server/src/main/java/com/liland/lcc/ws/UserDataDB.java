@@ -17,22 +17,26 @@ public class UserDataDB {
     private String uuid;
 
     @Lob
-    private Blob publicKey;
-    private InstanceType instanceType;
+    private Blob publickey;
+    private InstanceType instancetype;
     private String version;
     private SystemStatus status;
     private LocalDateTime timestamp;
-
+    
+    public Integer getId() {
+        return id;
+    }
+    
     public String getUuid() {
         return uuid;
     }
 
-    public Blob getPublicKey() {
-        return publicKey;
+    public Blob getPublickey() {
+        return publickey;
     }
 
-    public InstanceType getInstanceType() {
-        return instanceType;
+    public InstanceType getInstancetype() {
+        return instancetype;
     }
 
     public String getVersion() {
@@ -51,12 +55,12 @@ public class UserDataDB {
         this.uuid = uuid;
     }
 
-    public void setPublicKey(Blob publicKey) {
-        this.publicKey = publicKey;
+    public void setPublickey(Blob publickey) {
+        this.publickey = publickey;
     }
 
-    public void setInstanceType(InstanceType instanceType) {
-        this.instanceType = instanceType;
+    public void setInstancetype(InstanceType instancetype) {
+        this.instancetype = instancetype;
     }
 
     public void setVersion(String version) {

@@ -2,11 +2,11 @@ package com.liland.lcc.dto;
 
 import java.util.List;
 
-public class ListResponse {
+public class TenantListResponse{
     private ResponseStatus status;
-    private List<UserDataResponse> list;
+    private List<TenantResponse> list;
 
-    public ListResponse(ResponseStatus status, List<UserDataResponse> list) {
+    public TenantListResponse(ResponseStatus status, List<TenantResponse> list) {
         this.status = status;
         this.list = list;
     }
@@ -15,7 +15,7 @@ public class ListResponse {
         return status;
     }
 
-    public List<UserDataResponse> getList() {
+    public List<TenantResponse> getList() {
         return list;
     }
 
@@ -23,7 +23,7 @@ public class ListResponse {
         this.status = status;
     }
 
-    public void setList(List<UserDataResponse> list) {
+    public void setList(List<TenantResponse> list) {
         this.list = list;
     }
 }
