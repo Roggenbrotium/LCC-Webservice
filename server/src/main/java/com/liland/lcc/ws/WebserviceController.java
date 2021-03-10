@@ -37,6 +37,10 @@ public class WebserviceController{
     @Autowired
     private TenantRepository tenantRepository;
     
+    public static String ipAddress;
+    
+    //region registry
+    
     /**
      * Saves a new system to the database.
      * Does not require token.
@@ -61,6 +65,7 @@ public class WebserviceController{
                 byte[] bytes = userDataRequest.getPublickey().getBytes(StandardCharsets.UTF_8);
                 Blob blob = BlobProxy.generateProxy(bytes);
                 userDataDB.setPublickey(blob);
+                userDataDB.setIpaddress(ipAddress);
                 
                 dataRepository.save(userDataDB);
                 return ResponseEntity.ok().body(new StatusResponse(ResponseStatus.OK));
@@ -102,7 +107,7 @@ public class WebserviceController{
     public ResponseEntity<StatusResponse> systemUpdate(@RequestBody UpdateRequest updateRequest, @RequestHeader String Authorization){
         String uuid = getUuidFromJwtToken(Authorization);
         if(dataRepository.existsByUuid(uuid)){
-            dataRepository.updateVersion(updateRequest.getVersion(), uuid);
+            dataRepository.updateVersion(updateRequest.getVersion(), uuid, ipAddress);
             return ResponseEntity.ok().body(new StatusResponse(ResponseStatus.OK));
         }
         return ResponseEntity.ok().body(new StatusResponse(ResponseStatus.UNKNOWN_UUID));
@@ -156,7 +161,7 @@ public class WebserviceController{
         if(userData.getStatus() != SystemStatus.ADOPTED){
             return ResponseEntity.ok().body(new StatusResponse(ResponseStatus.NOT_ADOPTED));
         }else{
-            dataRepository.updateTimestamp(LocalDateTime.now().withNano(0), uuid);
+            dataRepository.updateTimestamp(LocalDateTime.now().withNano(0), uuid, ipAddress);
             return ResponseEntity.ok().body(new StatusResponse(ResponseStatus.OK));
         }
     }
@@ -209,14 +214,17 @@ public class WebserviceController{
         return ResponseEntity.ok().body(new StatusResponse(ResponseStatus.OK));
     }
     
+    //endregion
+    
+    //region ws/tenants
+    
     /**
      * Saves a tenant of a specific system in the database.
      * Does require token.
      */
     @PostMapping(value = "/ws/tenants/add", consumes = "application/json", produces = "application/json")
     public ResponseEntity<StatusResponse> tenantAdd(@RequestBody TenantRequest tenantRequest, @RequestHeader String Authorization){
-        String uuid = getUuidFromJwtToken(Authorization);
-        UserDataDB userData = dataRepository.findByUuid(uuid);
+        UserDataDB userData = dataRepository.findByUuid(getUuidFromJwtToken(Authorization));
         TenantDB tenantDB = new TenantDB();
         tenantDB.setExternalid(tenantRequest.getExternalid());
         tenantDB.setSystemid(userData.getId());
@@ -233,8 +241,7 @@ public class WebserviceController{
     @PostMapping(value = "/ws/tenants/update", consumes = "application/json", produces = "application/json")
     @Transactional
     public ResponseEntity<StatusResponse> tenantUpdate(@RequestBody TenantRequest tenantRequest, @RequestHeader String Authorization){
-        String uuid = getUuidFromJwtToken(Authorization);
-        UserDataDB userData = dataRepository.findByUuid(uuid);
+        UserDataDB userData = dataRepository.findByUuid(getUuidFromJwtToken(Authorization));
         TenantDB tenantDB = tenantRepository.findBySystemidAndExternalid(userData.getId(), tenantRequest.getExternalid());
         tenantDB.setName(tenantRequest.getName());
         tenantDB.setExpirationdate(tenantRequest.getExpirationdate());
@@ -243,10 +250,9 @@ public class WebserviceController{
     }
     
     /**
-     * Creates a list of tenant of a specific system in the database.
+     * Creates a list of tenants of a specific system in the database.
      * Does require token.
      */
-    //list unfinished for now
     @PostMapping(value = "/ws/tenants/list", consumes = "application/json", produces = "application/json")
     @Transactional
     public ResponseEntity<TenantListResponse> tenantList(@RequestHeader String Authorization){
@@ -256,12 +262,26 @@ public class WebserviceController{
         tenantDBList = tenantRepository.findAll();
     
         for(TenantDB tenantDB : tenantDBList){
-            tenantResponses.add(new TenantResponse(tenantDB.getExternalid(), /*tenantDB.getSystemid()*/ "",
-                    tenantDB.getName(), tenantDB.getExpirationdate()));
+            UserDataDB userDataDB = dataRepository.findById(tenantDB.getSystemid());
+            if(getUuidFromJwtToken(Authorization).equals(userDataDB.getUuid())){
+                tenantResponses.add(new TenantResponse(tenantDB.getExternalid(), userDataDB.getUuid(),
+                        tenantDB.getName(), tenantDB.getExpirationdate()));
+            }
         }
     
-        return ResponseEntity.ok().body(new TenantListResponse(ResponseStatus.OK, tenantResponses));
+        return ResponseEntity.ok().body(new TenantListResponse(tenantResponses));
     }
+    
+    @PostMapping(value = "/ws/tenants/delete", consumes = "application/json", produces = "application/json")
+    @Transactional
+    public ResponseEntity<StatusResponse> tenantDelete(@RequestBody TenantRequest tenantRequest, @RequestHeader String Authorization){
+        UserDataDB userData = dataRepository.findByUuid(getUuidFromJwtToken(Authorization));
+        TenantDB tenantDB = tenantRepository.findBySystemidAndExternalid(userData.getId(), tenantRequest.getExternalid());
+        tenantRepository.delete(tenantDB);
+        return ResponseEntity.ok().body(new StatusResponse(ResponseStatus.OK));
+    }
+    
+    //endregion
     
     
     /**

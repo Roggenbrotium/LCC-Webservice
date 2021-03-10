@@ -138,6 +138,7 @@ public class ClientApplication {
         con.setDoOutput(true);
     }
     
+    //region System
     /**Sends request to add.*/
     public static void systemAdd(String[] args, KeyPair keyPair, String uuid) throws IOException, JSONException{
         URL url = new URL("http://localhost:8080/registry/add");
@@ -251,32 +252,41 @@ public class ClientApplication {
      * Sends request to add.
      * Only for testing.
      */
-    public static void systemDelete(String uuid) throws IOException{
+    public static void systemDelete() throws IOException{
         URL url = new URL("http://localhost:8080/registry/delete");
         
         connectSetter(url);
-
+        
         String response = httpHandler("");
         System.out.println(response);
     }
+    //endregion
     
+    //region Tenant
+    
+    /**
+     * Sends request to add.
+     */
     public static void tenantAdd(String[] args) throws IOException, JSONException{
         URL url = new URL("http://localhost:8080/ws/tenants/add");
         
         connectSetter(url);
-    
+        
         String jsonInputString = new JSONObject()
                 .put("externalid", args[1])
                 .put("name", args[2])
                 .put("expirationdate", args[3])
                 .toString();
-    
+        
         System.out.println(jsonInputString);
-    
+        
         String response = httpHandler(jsonInputString);
         System.out.println(response);
     }
     
+    /**
+     * Sends request to update.
+     */
     public static void tenantUpdate(String[] args) throws IOException, JSONException{
         URL url = new URL("http://localhost:8080/ws/tenants/update");
         
@@ -294,7 +304,10 @@ public class ClientApplication {
         System.out.println(response);
     }
     
-    public static void tenantList(String[] args) throws IOException, JSONException{
+    /**
+     * Sends request to list.
+     */
+    public static void tenantList() throws IOException{
         URL url = new URL("http://localhost:8080/ws/tenants/list");
         
         connectSetter(url);
@@ -302,4 +315,23 @@ public class ClientApplication {
         String response = httpHandler("");
         System.out.println(response);
     }
+    
+    /**
+     * Sends request to delete.
+     */
+    public static void tenantDelete(String[] args) throws IOException, JSONException{
+        URL url = new URL("http://localhost:8080/ws/tenants/delete");
+        
+        connectSetter(url);
+        
+        String jsonInputString = new JSONObject()
+                .put("externalid", args[1])
+                .toString();
+        
+        System.out.println(jsonInputString);
+        
+        String response = httpHandler(jsonInputString);
+        System.out.println(response);
+    }
+    //endregion
 }

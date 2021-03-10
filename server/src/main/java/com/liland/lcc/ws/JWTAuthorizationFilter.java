@@ -22,6 +22,19 @@ public class JWTAuthorizationFilter extends BasicAuthenticationFilter{
         super(authManager);
     }
     
+    private static final String[] IP_HEADER_CANDIDATES = {
+            "X-Forwarded-For",
+            "Proxy-Client-IP",
+            "WL-Proxy-Client-IP",
+            "HTTP_X_FORWARDED_FOR",
+            "HTTP_X_FORWARDED",
+            "HTTP_X_CLUSTER_CLIENT_IP",
+            "HTTP_CLIENT_IP",
+            "HTTP_FORWARDED_FOR",
+            "HTTP_FORWARDED",
+            "HTTP_VIA",
+            "REMOTE_ADDR"};
+    
     /**
      * Checks the Authorization-header for a specific prefix then executes getAuthentication.
      * If the return value isn't null the request will be let through.
@@ -36,8 +49,10 @@ public class JWTAuthorizationFilter extends BasicAuthenticationFilter{
             return;
         }
         
+        getClientIpAddress(req);
+        
         UsernamePasswordAuthenticationToken authentication = getAuthentication(req);
-
+        
         SecurityContextHolder.getContext().setAuthentication(authentication);
         chain.doFilter(req, res);
     }
@@ -51,12 +66,25 @@ public class JWTAuthorizationFilter extends BasicAuthenticationFilter{
                     .build()
                     .verify(token.replace(TOKEN_PREFIX, ""))
                     .getSubject();
-
-            if (user != null) {
+    
+            if(user != null){
                 return new UsernamePasswordAuthenticationToken(user, null, new ArrayList<>());
             }
             return null;
         }
         return null;
+    }
+    
+    /**
+     * Gets the IP-Address of the client that send the request
+     */
+    private void getClientIpAddress(HttpServletRequest request){
+        for(String header : IP_HEADER_CANDIDATES){
+            String ip = request.getHeader(header);
+            if(ip != null && ip.length() != 0 && !"unknown".equalsIgnoreCase(ip)){
+                WebserviceController.ipAddress = ip;
+            }
+        }
+        WebserviceController.ipAddress = request.getRemoteAddr();
     }
 }

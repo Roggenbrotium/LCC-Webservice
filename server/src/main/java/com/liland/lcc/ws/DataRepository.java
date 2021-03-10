@@ -13,6 +13,8 @@ import java.util.List;
 public interface DataRepository extends JpaRepository<UserDataDB, Integer>{
     UserDataDB findByUuid(String uuid);
     
+    UserDataDB findById(int id);
+    
     Boolean existsByUuid(String uuid);
     
     List<UserDataDB> findByInstancetypeAndStatus(InstanceType instancetype, SystemStatus status);
@@ -26,10 +28,10 @@ public interface DataRepository extends JpaRepository<UserDataDB, Integer>{
     void updateStatus(@Param("status") int status, @Param("uuid") String uuid);
     
     @Modifying
-    @Query(value = "update data set version = :version where uuid = :uuid", nativeQuery = true)
-    void updateVersion(@Param("version") String version, @Param("uuid") String uuid);
+    @Query(value = "update data set version = :version, ipaddress = :ipAddress where uuid = :uuid", nativeQuery = true)
+    void updateVersion(@Param("version") String version, @Param("uuid") String uuid, @Param("ipAddress") String ipAddress);
     
     @Modifying
-    @Query(value = "update data set timestamp = :timestamp where uuid = :uuid", nativeQuery = true)
-    void updateTimestamp(@Param("timestamp") LocalDateTime timestamp, @Param("uuid") String uuid);
+    @Query(value = "update data set timestamp = :timestamp, ipaddress = :ipAddress where uuid = :uuid", nativeQuery = true)
+    void updateTimestamp(@Param("timestamp") LocalDateTime timestamp, @Param("uuid") String uuid, @Param("ipAddress") String ipAddress);
 }

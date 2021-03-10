@@ -22,7 +22,9 @@ public class UserDataDB {
     private String version;
     private SystemStatus status;
     private LocalDateTime timestamp;
+    private String ipaddress;
     
+    //region getter
     public Integer getId() {
         return id;
     }
@@ -50,7 +52,13 @@ public class UserDataDB {
     public LocalDateTime getTimestamp() {
         return timestamp;
     }
+    
+    public String getIpaddress() {
+        return ipaddress;
+    }
+    //endregion
 
+    //region setter
     public void setUuid(String uuid) {
         this.uuid = uuid;
     }
@@ -74,4 +82,9 @@ public class UserDataDB {
     public void setTimestamp(LocalDateTime timestamp) {
         this.timestamp = timestamp;
     }
+    
+    public void setIpaddress(String ipaddress) {
+        this.ipaddress = ipaddress;
+    }
+    //endregion
 }

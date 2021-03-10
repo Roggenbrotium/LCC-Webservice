@@ -37,6 +37,13 @@ class ClientApplicationTest {
         ClientApplication.tenantAdd(args);
         args = new String[]{"", "123123", "blahblah", "2022-06-02"};
         ClientApplication.tenantUpdate(args);
+        args = new String[]{"", "321321", "habl", "2021-06-02"};
+        ClientApplication.tenantAdd(args);
+        args = new String[]{"", "321321", "hablhabl", "2022-05-01"};
+        ClientApplication.tenantUpdate(args);
+        args = new String[]{"", "123123"};
+        ClientApplication.tenantDelete(args);
+        ClientApplication.tenantList();
         //ClientApplication.delete(uuid);
     }
 }
