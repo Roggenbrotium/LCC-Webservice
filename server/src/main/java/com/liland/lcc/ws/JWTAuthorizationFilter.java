@@ -4,6 +4,9 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 
@@ -13,6 +16,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import static com.liland.lcc.ws.SecurityConstants.*;
 
@@ -21,19 +27,6 @@ public class JWTAuthorizationFilter extends BasicAuthenticationFilter{
     public JWTAuthorizationFilter(AuthenticationManager authManager){
         super(authManager);
     }
-    
-    private static final String[] IP_HEADER_CANDIDATES = {
-            "X-Forwarded-For",
-            "Proxy-Client-IP",
-            "WL-Proxy-Client-IP",
-            "HTTP_X_FORWARDED_FOR",
-            "HTTP_X_FORWARDED",
-            "HTTP_X_CLUSTER_CLIENT_IP",
-            "HTTP_CLIENT_IP",
-            "HTTP_FORWARDED_FOR",
-            "HTTP_FORWARDED",
-            "HTTP_VIA",
-            "REMOTE_ADDR"};
     
     /**
      * Checks the Authorization-header for a specific prefix then executes getAuthentication.
@@ -48,8 +41,6 @@ public class JWTAuthorizationFilter extends BasicAuthenticationFilter{
             chain.doFilter(req, res);
             return;
         }
-        
-        getClientIpAddress(req);
         
         UsernamePasswordAuthenticationToken authentication = getAuthentication(req);
         
@@ -68,23 +59,19 @@ public class JWTAuthorizationFilter extends BasicAuthenticationFilter{
                     .getSubject();
     
             if(user != null){
-                return new UsernamePasswordAuthenticationToken(user, null, new ArrayList<>());
+                String role = JWT.require(Algorithm.HMAC512(SECRET.getBytes()))
+                        .build()
+                        .verify(token.replace(TOKEN_PREFIX, ""))
+                        .getClaim("role").asString();
+                
+                Set<GrantedAuthority> setAuths = new HashSet<>();
+                setAuths.add(new SimpleGrantedAuthority(role));
+                List<GrantedAuthority> Result = new ArrayList<>(setAuths);
+                
+                return new UsernamePasswordAuthenticationToken(user, null, Result);
             }
             return null;
         }
         return null;
-    }
-    
-    /**
-     * Gets the IP-Address of the client that send the request
-     */
-    private void getClientIpAddress(HttpServletRequest request){
-        for(String header : IP_HEADER_CANDIDATES){
-            String ip = request.getHeader(header);
-            if(ip != null && ip.length() != 0 && !"unknown".equalsIgnoreCase(ip)){
-                WebserviceController.ipAddress = ip;
-            }
-        }
-        WebserviceController.ipAddress = request.getRemoteAddr();
     }
 }

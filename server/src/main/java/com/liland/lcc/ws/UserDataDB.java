@@ -1,6 +1,7 @@
 package com.liland.lcc.ws;
 
 import com.liland.lcc.dto.InstanceType;
+import com.liland.lcc.dto.Roles;
 import com.liland.lcc.dto.SystemStatus;
 
 import javax.persistence.*;
@@ -23,6 +24,7 @@ public class UserDataDB {
     private SystemStatus status;
     private LocalDateTime timestamp;
     private String ipaddress;
+    private Roles role;
     
     //region getter
     public Integer getId() {
@@ -56,6 +58,10 @@ public class UserDataDB {
     public String getIpaddress() {
         return ipaddress;
     }
+    
+    public Roles getRole() {
+        return role;
+    }
     //endregion
 
     //region setter
@@ -85,6 +91,10 @@ public class UserDataDB {
     
     public void setIpaddress(String ipaddress) {
         this.ipaddress = ipaddress;
+    }
+    
+    public void setRole(Roles role) {
+        this.role = role;
     }
     //endregion
 }

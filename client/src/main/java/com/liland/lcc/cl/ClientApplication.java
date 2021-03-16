@@ -106,7 +106,7 @@ public class ClientApplication {
      * Sends a request and receives a response.
      * It also saves the received token in the response-header.
      */
-    public static void tokenHttpHandler(String httpBody) throws IOException{
+    public static String tokenHttpHandler(String httpBody) throws IOException{
         OutputStream outputStream = con.getOutputStream();
         byte[] body = httpBody.getBytes(UTF_8);
         outputStream.write(body, 0, body.length);
@@ -120,7 +120,7 @@ public class ClientApplication {
             }
             token = con.getHeaderField("Authentication");
             
-            System.out.println(response);
+            return  response.toString();
         }
     }
     
@@ -140,7 +140,7 @@ public class ClientApplication {
     
     //region System
     /**Sends request to add.*/
-    public static void systemAdd(String[] args, KeyPair keyPair, String uuid) throws IOException, JSONException{
+    public static String systemAdd(String[] args, KeyPair keyPair, String uuid) throws IOException, JSONException{
         URL url = new URL("http://localhost:8080/registry/add");
 
         connectSetter(url);
@@ -153,15 +153,34 @@ public class ClientApplication {
                 .put("instancetype", args[1])
                 .put("version", args[2])
                 .toString();
-
-        System.out.println(jsonInputString);
-
-        String response = httpHandler(jsonInputString);
-        System.out.println(response);
+    
+        return httpHandler(jsonInputString);
+    
+        //System.out.println(response);
+    }
+    
+    /**Sends request to addAdmin.*/
+    public static String systemAddAdmin(String[] args, KeyPair keyPair, String uuid) throws IOException, JSONException{
+        URL url = new URL("http://localhost:8080/registry/addAdmin");
+        
+        connectSetter(url);
+        
+        String publicKey = Base64.getEncoder().encodeToString(keyPair.getPublic().getEncoded());
+        
+        String jsonInputString = new JSONObject()
+                .put("uuid", uuid)
+                .put("publickey", publicKey)
+                .put("instancetype", args[1])
+                .put("version", args[2])
+                .toString();
+        
+        return httpHandler(jsonInputString);
+        
+        //System.out.println(response);
     }
     
     /**Sends request to adopt.*/
-    public static void systemAdopt(String uuid, boolean adopt) throws IOException, JSONException{
+    public static String systemAdopt(String uuid, boolean adopt) throws IOException, JSONException{
         URL url = new URL("http://localhost:8080/registry/adopt");
 
         connectSetter(url);
@@ -170,15 +189,14 @@ public class ClientApplication {
                 .put("uuid", uuid)
                 .put("adopt", adopt)
                 .toString();
-
-        System.out.println(jsonInputString);
-
-        String response = httpHandler(jsonInputString);
-        System.out.println(response);
+    
+        return httpHandler(jsonInputString);
+    
+        //System.out.println(response);
     }
     
     /**Sends request to login.*/
-    public static void systemLogin(KeyPair keyPair, String uuid) throws IOException, JSONException{
+    public static String systemLogin(KeyPair keyPair, String uuid) throws IOException, JSONException{
         URL url = new URL("http://localhost:8080/registry/login");
 
         connectSetter(url);
@@ -194,15 +212,15 @@ public class ClientApplication {
                 .put("msg", message)
                 .toString();
     
-        System.out.println(jsonInputString);
-    
-        tokenHttpHandler(jsonInputString);
+        return tokenHttpHandler(jsonInputString);
+        
+        //System.out.println(response);
     }
     
     /**
      * Sends request to add.
      */
-    public static void systemUpdate(String[] args) throws IOException, JSONException{
+    public static String systemUpdate(String[] args) throws IOException, JSONException{
         URL url = new URL("http://localhost:8080/registry/update");
         
         connectSetter(url);
@@ -210,28 +228,28 @@ public class ClientApplication {
         String jsonInputString = new JSONObject()
                 .put("version", args[1])
                 .toString();
-        
-        System.out.println(jsonInputString);
-        
-        String response = httpHandler(jsonInputString);
-        System.out.println(response);
+    
+        return httpHandler(jsonInputString);
+    
+        //System.out.println(response);
     }
     
     /**
      * Sends request to heartbeat.
      * Should be executed every 5 seconds.
      */
-    public static void systemHeartbeat() throws IOException{
+    public static String systemHeartbeat() throws IOException{
         URL url = new URL("http://localhost:8080/registry/heartbeat");
         
         connectSetter(url);
-        
-        String response = httpHandler("");
-        System.out.println(response);
+    
+        return httpHandler("");
+    
+        //System.out.println(response);
     }
     
     /**Sends request to list.*/
-    public static void systemList(String[] args) throws IOException, JSONException{
+    public static String systemList(String[] args) throws IOException, JSONException{
         URL url = new URL("http://localhost:8080/registry/list");
     
         connectSetter(url);
@@ -242,23 +260,23 @@ public class ClientApplication {
                         .put("instancetype", args[2]))
                 .toString();
     
-        System.out.println(jsonInputString);
-    
-        String response = httpHandler(jsonInputString);
-        System.out.println(response);
+        return httpHandler(jsonInputString);
+        
+        //System.out.println(response);
     }
     
     /**
      * Sends request to add.
      * Only for testing.
      */
-    public static void systemDelete() throws IOException{
+    public static String systemDelete() throws IOException{
         URL url = new URL("http://localhost:8080/registry/delete");
         
         connectSetter(url);
         
-        String response = httpHandler("");
-        System.out.println(response);
+        return httpHandler("");
+        
+        //System.out.println(response);
     }
     //endregion
     
@@ -267,7 +285,7 @@ public class ClientApplication {
     /**
      * Sends request to add.
      */
-    public static void tenantAdd(String[] args) throws IOException, JSONException{
+    public static String tenantAdd(String[] args) throws IOException, JSONException{
         URL url = new URL("http://localhost:8080/ws/tenants/add");
         
         connectSetter(url);
@@ -278,16 +296,13 @@ public class ClientApplication {
                 .put("expirationdate", args[3])
                 .toString();
         
-        System.out.println(jsonInputString);
-        
-        String response = httpHandler(jsonInputString);
-        System.out.println(response);
+        return httpHandler(jsonInputString);
     }
     
     /**
      * Sends request to update.
      */
-    public static void tenantUpdate(String[] args) throws IOException, JSONException{
+    public static String tenantUpdate(String[] args) throws IOException, JSONException{
         URL url = new URL("http://localhost:8080/ws/tenants/update");
         
         connectSetter(url);
@@ -298,28 +313,24 @@ public class ClientApplication {
                 .put("expirationdate", args[3])
                 .toString();
         
-        System.out.println(jsonInputString);
-        
-        String response = httpHandler(jsonInputString);
-        System.out.println(response);
+        return httpHandler(jsonInputString);
     }
     
     /**
      * Sends request to list.
      */
-    public static void tenantList() throws IOException{
+    public static String tenantList() throws IOException{
         URL url = new URL("http://localhost:8080/ws/tenants/list");
         
         connectSetter(url);
         
-        String response = httpHandler("");
-        System.out.println(response);
+        return httpHandler("");
     }
     
     /**
      * Sends request to delete.
      */
-    public static void tenantDelete(String[] args) throws IOException, JSONException{
+    public static String tenantDelete(String[] args) throws IOException, JSONException{
         URL url = new URL("http://localhost:8080/ws/tenants/delete");
         
         connectSetter(url);
@@ -328,10 +339,7 @@ public class ClientApplication {
                 .put("externalid", args[1])
                 .toString();
         
-        System.out.println(jsonInputString);
-        
-        String response = httpHandler(jsonInputString);
-        System.out.println(response);
+        return httpHandler(jsonInputString);
     }
     //endregion
 }

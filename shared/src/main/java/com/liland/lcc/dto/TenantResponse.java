@@ -18,6 +18,7 @@ public class TenantResponse{
         this.expirationdate = expirationdate;
     }
     
+    //region getter
     public int getExternalid() {
         return externalid;
     }
@@ -33,7 +34,9 @@ public class TenantResponse{
     public LocalDate getExpirationdate(){
         return expirationdate;
     }
-
+    //endregion
+    
+    //region setter
     public void setExternalid(int externalid) {
         this.externalid = externalid;
     }
@@ -49,4 +52,5 @@ public class TenantResponse{
     public void setExpirationdate(LocalDate expirationdate){
         this.expirationdate = expirationdate;
     }
+    //endregion
 }

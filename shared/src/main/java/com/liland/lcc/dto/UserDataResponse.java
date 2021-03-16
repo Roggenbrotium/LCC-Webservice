@@ -11,15 +11,7 @@ public class UserDataResponse {
     private SystemStatus status;
     private LocalDateTime timestamp;
 
-    public UserDataResponse(String uuid, String publickey, InstanceType instancetype, String version, SystemStatus status, LocalDateTime timestamp){
-        this.uuid = uuid;
-        this.publickey = publickey;
-        this.instancetype = instancetype;
-        this.version = version;
-        this.status = status;
-        this.timestamp = timestamp;
-    }
-
+    //region getter
     public String getUuid(){
         return uuid;
     }
@@ -43,7 +35,9 @@ public class UserDataResponse {
     public LocalDateTime getTimestamp(){
         return timestamp;
     }
+    //endregion
 
+    //region setter
     public void setUuid(String uuid){
         this.uuid = uuid;
     }
@@ -67,4 +61,5 @@ public class UserDataResponse {
     public void setTimestamp(LocalDateTime timestamp){
         this.timestamp = timestamp;
     }
+    //endregion
 }

@@ -6,11 +6,7 @@ public class UserListResponse{
     private ResponseStatus status;
     private List<UserDataResponse> list;
 
-    public UserListResponse(ResponseStatus status, List<UserDataResponse> list) {
-        this.status = status;
-        this.list = list;
-    }
-
+    //region getter
     public ResponseStatus getStatus() {
         return status;
     }
@@ -18,12 +14,15 @@ public class UserListResponse{
     public List<UserDataResponse> getList() {
         return list;
     }
-
-    public void setFilterStates(ResponseStatus status) {
+    //endregion
+    
+    //region setter
+    public void setStatus(ResponseStatus status) {
         this.status = status;
     }
 
     public void setList(List<UserDataResponse> list) {
         this.list = list;
     }
+    //endregion
 }

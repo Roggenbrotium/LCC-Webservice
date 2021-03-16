@@ -15,6 +15,7 @@ public class TenantDB{
     private String name;
     private LocalDate expirationdate;
     
+    //region getter
     public Integer getId() {
         return id;
     }
@@ -34,7 +35,9 @@ public class TenantDB{
     public LocalDate getExpirationdate(){
         return expirationdate;
     }
+    //endregion
 
+    //region setter
     public void setExternalid(int externalid) {
         this.externalid = externalid;
     }
@@ -50,4 +53,5 @@ public class TenantDB{
     public void setExpirationdate(LocalDate expirationdate){
         this.expirationdate = expirationdate;
     }
+    //endregion
 }

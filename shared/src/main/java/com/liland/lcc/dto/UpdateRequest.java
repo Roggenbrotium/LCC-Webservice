@@ -4,6 +4,7 @@ public class UpdateRequest {
     private String uuid;
     private String version;
 
+    //region getter
     public String getUuid() {
         return uuid;
     }
@@ -11,7 +12,9 @@ public class UpdateRequest {
     public String getVersion() {
         return version;
     }
-
+    //endregion
+    
+    //region setter
     public void setUuid(String uuid) {
         this.uuid = uuid;
     }
@@ -19,4 +22,5 @@ public class UpdateRequest {
     public void setVersion(String version) {
         this.version = version;
     }
+    //endregion
 }

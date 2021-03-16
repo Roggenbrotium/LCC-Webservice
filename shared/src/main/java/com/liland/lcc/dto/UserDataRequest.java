@@ -7,6 +7,7 @@ public class UserDataRequest {
     private InstanceType instancetype;
     private String version;
 
+    //region getter
     public String getUuid() {
         return uuid;
     }
@@ -22,7 +23,9 @@ public class UserDataRequest {
     public String getVersion() {
         return version;
     }
-
+    //endregion
+    
+    //region setter
     public void setUuid(String uuid) {
         this.uuid = uuid;
     }
@@ -38,4 +41,5 @@ public class UserDataRequest {
     public void setVersion(String version) {
         this.version = version;
     }
+    //endregion
 }
