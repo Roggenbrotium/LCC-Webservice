@@ -24,14 +24,14 @@ public interface DataRepository extends JpaRepository<UserDataDB, Integer>{
     List<UserDataDB> findByStatus(SystemStatus status);
     
     @Modifying
-    @Query(value = "update data set status = :status where uuid = :uuid", nativeQuery = true)
+    @Query(value = "update liland_system set status = :status where uuid = :uuid", nativeQuery = true)
     void updateStatus(@Param("status") int status, @Param("uuid") String uuid);
     
     @Modifying
-    @Query(value = "update data set version = :version, ipaddress = :ipAddress where uuid = :uuid", nativeQuery = true)
+    @Query(value = "update liland_system set version = :version, ipaddress = :ipAddress where uuid = :uuid", nativeQuery = true)
     void updateVersion(@Param("version") String version, @Param("uuid") String uuid, @Param("ipAddress") String ipAddress);
     
     @Modifying
-    @Query(value = "update data set timestamp = :timestamp, ipaddress = :ipAddress where uuid = :uuid", nativeQuery = true)
+    @Query(value = "update liland_system set timestamp = :timestamp, ipaddress = :ipAddress where uuid = :uuid", nativeQuery = true)
     void updateTimestamp(@Param("timestamp") LocalDateTime timestamp, @Param("uuid") String uuid, @Param("ipAddress") String ipAddress);
 }

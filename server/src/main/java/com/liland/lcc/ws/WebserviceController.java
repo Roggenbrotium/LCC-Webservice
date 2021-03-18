@@ -7,6 +7,7 @@ import com.liland.lcc.dto.*;
 import org.hibernate.engine.jdbc.BlobProxy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -30,7 +31,7 @@ import static com.liland.lcc.ws.SecurityConstants.*;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 @RestController
-@RequestMapping(method = {RequestMethod.GET, RequestMethod.PUT})
+@RequestMapping(method = {RequestMethod.GET, RequestMethod.PUT}, consumes = "application/json", produces = "application/json")
 public class WebserviceController{
     
     public WebserviceController(DataRepository dataRepository, TenantRepository tenantRepository) {
@@ -63,6 +64,7 @@ public class WebserviceController{
      * Does not require token.
      */
     @PostMapping(value = "/registry/add", consumes = "application/json", produces = "application/json")
+    @Transactional
     public ResponseEntity<StatusResponse> systemAdd(@RequestBody UserDataRequest userDataRequest, HttpServletRequest req){
         if(userDataRequest.getUuid().length() != 36){
             return ResponseEntity.ok().body(new StatusResponse(ResponseStatus.INVALID_REQUEST));
@@ -87,6 +89,7 @@ public class WebserviceController{
                 userDataDB.setRole(Roles.ROLE_USER);
                 
                 dataRepository.save(userDataDB);
+                List<UserDataDB> list = dataRepository.findAll();
                 return ResponseEntity.ok().body(new StatusResponse(ResponseStatus.OK));
             }else{
                 return ResponseEntity.ok().body(new StatusResponse(ResponseStatus.KNOWN_UUID));
@@ -95,6 +98,7 @@ public class WebserviceController{
     }
     
     @PostMapping(value = "/registry/addAdmin", consumes = "application/json", produces = "application/json")
+    @Transactional
     public ResponseEntity<StatusResponse> systemAddAdmin(@RequestBody UserDataRequest userDataRequest , HttpServletRequest req){
         if(userDataRequest.getUuid().length() != 36){
             return ResponseEntity.ok().body(new StatusResponse(ResponseStatus.INVALID_REQUEST));
@@ -260,13 +264,13 @@ public class WebserviceController{
             
             if(verify){
                 HttpHeaders httpHeaders = new HttpHeaders();
-                httpHeaders.set("Authentication", generateJwtToken(data.getUuid(), userDataDB.getRole().toString()));
+                httpHeaders.set("Authorization", generateJwtToken(data.getUuid(), userDataDB.getRole().toString()));
                 return ResponseEntity.ok().headers(httpHeaders).body(new StatusResponse(ResponseStatus.OK));
             }else{
-                return ResponseEntity.ok().body(new StatusResponse(ResponseStatus.INVALID_REQUEST));
+                return ResponseEntity.badRequest().body(new StatusResponse(ResponseStatus.INVALID_REQUEST));
             }
         }else{
-            return ResponseEntity.ok().body(new StatusResponse(ResponseStatus.NOT_ADOPTED));
+            return ResponseEntity.badRequest().body(new StatusResponse(ResponseStatus.NOT_ADOPTED));
         }
     }
     

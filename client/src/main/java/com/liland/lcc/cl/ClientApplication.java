@@ -133,7 +133,7 @@ public class ClientApplication {
         con.setRequestProperty("Content-Type", "application/json");
         con.setRequestProperty("Accept", "application/json");
         if (token != null) {
-            con.setRequestProperty("Authorization", "Bearer " + token);
+            con.setRequestProperty("Authentication", "Bearer " + token);
         }
         con.setDoOutput(true);
     }

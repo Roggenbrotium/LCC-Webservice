@@ -9,15 +9,16 @@ import java.sql.Blob;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "data")
+@Table(name = "liland_system")
 public class UserDataDB {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private Integer id;
 
     private String uuid;
 
     @Lob
+    @Column(length = 3000)
     private Blob publickey;
     private InstanceType instancetype;
     private String version;
